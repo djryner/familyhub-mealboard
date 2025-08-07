@@ -1,0 +1,13 @@
+
+[Unit]
+Description=Start Chromium in kiosk mode for FamilyHub Mealboard
+After=network-online.target
+
+[Service]
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/bash /home/pi/familyhub-mealboard/scripts/pi/start-kiosk.sh
+Restart=on-failure
+User=pi
+
+[Install]
+WantedBy=graphical.target

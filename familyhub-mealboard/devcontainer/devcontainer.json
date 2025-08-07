@@ -1,0 +1,13 @@
+
+{
+  "name": "familyhub-mealboard",
+  "postCreateCommand": "mkdir -p /workspaces/familyhub-mealboard/creds && echo \"$GOOGLE_APPLICATION_CREDENTIALS_JSON\" > /workspaces/familyhub-mealboard/creds/google.json && pip install -r requirements.txt",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  },
+  "containerEnv": {
+    "GOOGLE_APPLICATION_CREDENTIALS": "/workspaces/familyhub-mealboard/creds/google.json"
+  }
+}
