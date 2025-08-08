@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("REPL_ID", "devcontainer")
+print("Starting main.py")  # Add this line
 from app import app
 import routes  # noqa: F401
 
