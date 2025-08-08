@@ -6,11 +6,7 @@
 <!-- Dashboard Header -->
 <div class="section-header">
     <h1><i class="fas fa-tachometer-alt me-2"></i>Family Dashboard</h1>
-    {% if current_user.is_authenticated and current_user.is_admin %}
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary btn-lg">
-            <i class="fas fa-cog me-1"></i>Admin Panel
-        </a>
-    {% endif %}
+    
 </div>
 
 <!-- Quick Stats -->
@@ -28,12 +24,6 @@
         </div>
     </div>
     <div class="col-lg-3 col-md-6 mb-3">
-        <div class="stats-card bg-warning">
-            <span class="stats-number">{{ notifications|length if notifications else 0 }}</span>
-            <span class="stats-label">Notifications</span>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
         <div class="stats-card bg-info">
             <span class="stats-number">{{ (chores|selectattr('completed', 'equalto', true)|list)|length if chores else 0 }}</span>
             <span class="stats-label">Completed Today</span>
@@ -41,31 +31,6 @@
     </div>
 </div>
 
-
-<!-- Recent Notifications -->
-{% if notifications %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="fas fa-bell me-2"></i>Recent Notifications</h4>
-                <span class="badge bg-primary">{{ notifications|length }}</span>
-            </div>
-            <div class="card-body">
-                {% for notification in notifications[:3] %}
-                    <div class="alert alert-{{ notification.type }} mb-2" role="alert">
-                        <strong>{{ notification.title }}</strong> - {{ notification.message }}
-                        <small class="d-block mt-1 opacity-75">{{ notification.created_at.strftime('%B %d at %I:%M %p') }}</small>
-                    </div>
-                {% endfor %}
-                {% if notifications|length > 3 %}
-                    <p class="text-muted mb-0">...and {{ notifications|length - 3 }} more notifications</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 <!-- Main Content Grid -->
 <div class="row">
@@ -137,61 +102,9 @@
                     <i class="fas fa-calendar-plus fa-4x text-info mb-3"></i>
                     <h5>No Meals Planned</h5>
                     <p class="text-muted">Schedule your next meal</p>
-                    {% if current_user.is_authenticated and current_user.is_admin %}
-                        <a href="{{ url_for('admin_manage_meals') }}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-plus me-1"></i>Add Meal
-                        </a>
-                    {% endif %}
+                    
                 </div>
             {% endif %}
-        </div>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% if current_user.is_authenticated and current_user.is_admin %}
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <a href="{{ url_for('admin_new_chore') }}" class="btn btn-outline-primary btn-lg w-100 h-100 d-flex flex-column justify-content-center">
-                            <i class="fas fa-plus fa-2x mb-2"></i>
-                            <span>Add Chore</span>
-                        </a>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <a href="{{ url_for('admin_new_meal') }}" class="btn btn-outline-success btn-lg w-100 h-100 d-flex flex-column justify-content-center">
-                            <i class="fas fa-utensils fa-2x mb-2"></i>
-                            <span>Add Meal</span>
-                        </a>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <a href="{{ url_for('admin_new_notification') }}" class="btn btn-outline-warning btn-lg w-100 h-100 d-flex flex-column justify-content-center">
-                            <i class="fas fa-bell fa-2x mb-2"></i>
-                            <span>Add Notice</span>
-                        </a>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-info btn-lg w-100 h-100 d-flex flex-column justify-content-center">
-                            <i class="fas fa-cog fa-2x mb-2"></i>
-                            <span>Settings</span>
-                        </a>
-                    </div>
-                    {% else %}
-                    <div class="col-12 text-center">
-                        <p class="text-muted mb-3">Want to manage family content?</p>
-                        <a href="{{ url_for('replit_auth.login') }}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-sign-in-alt me-2"></i>Admin Login
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
         </div>
     </div>
 </div>

@@ -3,29 +3,92 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2><i class="fas fa-plus me-2"></i>Create New Chore</h2>
-    <form method="POST">
-        <div class="mb-3">
-            <label for="title" class="form-label">Chore Title</label>
-            <input type="text" name="title" id="title" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label for="assigned_to" class="form-label">Assign To</label>
-            <select name="assigned_to" id="assigned_to" class="form-select" required>
-                <option value="">-- Choose Family Member --</option>
-                <option value="Austin">Austin</option>
-                <option value="Addy">Addy</option>
-                <option value="Alex">Alex</option>
-                <option value="Doug">Doug</option>
-                <option value="Cate">Cate</option>
-                <option value="Nicole">Nicole</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="due_date" class="form-label">Due Date</label>
-            <input type="date" name="due_date" id="due_date" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>Save Chore</button>
-    </form>
+  <h2 class="mb-3"><i class="fas fa-plus me-2"></i>Create New Chore</h2>
+
+  {% if not categories or categories|length == 0 %}
+    <div class="alert alert-warning">
+      No categories available. Make sure <code>ChoreTemplate</code> has rows.
+    </div>
+  {% endif %}
+
+  <form method="POST" class="needs-validation" novalidate>
+    <!-- Category -->
+    <div class="mb-3">
+      <label for="category" class="form-label">Category</label>
+      <select id="category" name="category" class="form-select form-select-lg" required>
+        <option value="">— Select a category —</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">Tap to choose a category first.</div>
+    </div>
+
+    <!-- Chore (filtered by category) -->
+    <div class="mb-3">
+      <label for="template_id" class="form-label">Chore</label>
+      <select name="template_id" id="template_id" class="form-select form-select-lg" required disabled>
+        <option value="">— Select a chore —</option>
+      </select>
+    </div>
+
+    <!-- Assign to -->
+    <div class="mb-3">
+      <label for="assigned_to" class="form-label">Assign To</label>
+      <select name="assigned_to" id="assigned_to" class="form-select form-select-lg" required>
+        <option value="">— Choose family member —</option>
+        <option value="Austin">Austin</option>
+        <option value="Addy">Addy</option>
+        <option value="Alexandria">Alexandria</option>
+        <option value="Doug">Doug</option>
+        <option value="Cate">Cate</option>
+      </select>
+    </div>
+
+    <!-- Due date (tap-friendly) -->
+    <div class="mb-4">
+      <label for="due_date" class="form-label">Due Date</label>
+      <input type="date" name="due_date" id="due_date" class="form-control form-control-lg" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg w-100">
+      <i class="fas fa-check me-2"></i>Save Chore
+    </button>
+  </form>
 </div>
+
+<script>
+  // Simple guard so this runs after the DOM is ready
+  document.addEventListener('DOMContentLoaded', function () {
+    const categoryEl = document.getElementById('category');
+    const templateEl = document.getElementById('template_id');
+
+    if (!categoryEl) return;
+
+    categoryEl.addEventListener('change', async () => {
+      const cat = categoryEl.value;
+      templateEl.innerHTML = `<option value="">— Select a chore —</option>`;
+      templateEl.disabled = true;
+
+      if (!cat) return;
+
+      try {
+        const res = await fetch(`/api/chore-templates?category=${encodeURIComponent(cat)}`);
+        if (!res.ok) throw new Error('Failed to load chore templates');
+        const items = await res.json();
+
+        for (const item of items) {
+          const o = document.createElement('option');
+          o.value = item.id;
+          o.textContent = item.name;
+          templateEl.appendChild(o);
+        }
+        templateEl.disabled = items.length === 0;
+      } catch (e) {
+        console.error(e);
+        templateEl.disabled = true;
+      }
+    });
+  });
+</script>
 {% endblock %}
