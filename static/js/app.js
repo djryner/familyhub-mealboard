@@ -21,11 +21,17 @@ function initializeApp() {
     // Initialize touch enhancements
     initializeTouchEnhancements();
     
-    // Initialize swipe gestures
-    initializeSwipeGestures();
+    // Initialize swipe gestures for sidebar navigation
+    initializeSidebarSwipeGestures();
     
     // Initialize touch feedback
     initializeTouchFeedback();
+    
+    // Initialize sidebar navigation
+    initializeSidebarNavigation();
+    
+    // Load initial section
+    loadInitialSection();
 }
 
 function initializeAlerts() {
@@ -71,14 +77,30 @@ function initializeDeleteConfirmations() {
 
 // Utility functions for enhanced UX
 function showLoading(element) {
-    const originalText = element.innerHTML;
-    element.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
-    element.disabled = true;
-    
-    return () => {
-        element.innerHTML = originalText;
-        element.disabled = false;
-    };
+    if (element) {
+        // Button loading state
+        const originalText = element.innerHTML;
+        element.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+        element.disabled = true;
+        
+        return () => {
+            element.innerHTML = originalText;
+            element.disabled = false;
+        };
+    } else {
+        // Global loading overlay
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+        }
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
 }
 
 function showToast(message, type = 'info') {
@@ -209,12 +231,37 @@ if (window.location.pathname === '/notifications') {
     }, 300000); // 5 minutes
 }
 
-// Keyboard shortcuts
+// Enhanced keyboard shortcuts for sidebar navigation
 document.addEventListener('keydown', function(e) {
-    // Ctrl/Cmd + H = Home
+    // Number keys for quick section navigation
+    if (e.key >= '1' && e.key <= '4') {
+        e.preventDefault();
+        const sectionIndex = parseInt(e.key) - 1;
+        if (sections[sectionIndex]) {
+            loadSection(sections[sectionIndex]);
+            setActiveNavItem(document.querySelector(`[data-section="${sections[sectionIndex]}"]`));
+        }
+    }
+    
+    // Arrow keys for section navigation
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const currentIndex = sections.indexOf(currentSection);
+        
+        if (e.key === 'ArrowLeft' && currentIndex > 0) {
+            loadSection(sections[currentIndex - 1]);
+            setActiveNavItem(document.querySelector(`[data-section="${sections[currentIndex - 1]}"]`));
+        } else if (e.key === 'ArrowRight' && currentIndex < sections.length - 1) {
+            loadSection(sections[currentIndex + 1]);
+            setActiveNavItem(document.querySelector(`[data-section="${sections[currentIndex + 1]}"]`));
+        }
+    }
+    
+    // Ctrl/Cmd + H = Dashboard
     if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
         e.preventDefault();
-        window.location.href = '/';
+        loadSection('dashboard');
+        setActiveNavItem(document.querySelector('[data-section="dashboard"]'));
     }
     
     // Ctrl/Cmd + A = Admin (if logged in)
@@ -332,19 +379,136 @@ function initializeTouchEnhancements() {
     });
 }
 
-// Swipe gesture navigation
-function initializeSwipeGestures() {
+// Sidebar navigation system
+let currentSection = 'dashboard';
+const sections = ['dashboard', 'chores', 'meals', 'notifications'];
+
+function initializeSidebarNavigation() {
+    const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (this.dataset.section) {
+                e.preventDefault();
+                const section = this.dataset.section;
+                loadSection(section);
+                setActiveNavItem(this);
+            }
+        });
+    });
+}
+
+function loadSection(sectionName) {
+    if (sectionName === currentSection) return;
+    
+    showLoading();
+    currentSection = sectionName;
+    
+    // Determine the URL based on section
+    let url;
+    switch(sectionName) {
+        case 'dashboard':
+            url = '/';
+            break;
+        case 'chores':
+            url = '/chores';
+            break;
+        case 'meals':
+            url = '/meal-plans';
+            break;
+        case 'notifications':
+            url = '/notifications';
+            break;
+        default:
+            url = '/';
+    }
+    
+    // Fetch content via AJAX
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Extract content from the response
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newContent = doc.querySelector('main').innerHTML;
+        
+        // Update the main content
+        const mainContent = document.querySelector('.main-content');
+        mainContent.innerHTML = newContent;
+        
+        // Re-initialize interactive elements
+        initializeInteractiveElements();
+        
+        hideLoading();
+        
+        // Update browser history
+        history.pushState({section: sectionName}, '', url);
+    })
+    .catch(error => {
+        console.error('Error loading section:', error);
+        hideLoading();
+        showToast('Failed to load section. Please try again.', 'error');
+    });
+}
+
+function setActiveNavItem(activeLink) {
+    // Remove active class from all nav links
+    document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Add active class to clicked link
+    activeLink.classList.add('active');
+}
+
+function loadInitialSection() {
+    const currentPath = window.location.pathname;
+    let initialSection = 'dashboard';
+    
+    if (currentPath === '/chores') {
+        initialSection = 'chores';
+    } else if (currentPath === '/meal-plans') {
+        initialSection = 'meals';
+    } else if (currentPath === '/notifications') {
+        initialSection = 'notifications';
+    }
+    
+    // Set active nav item based on current page
+    const activeLink = document.querySelector(`[data-section="${initialSection}"]`);
+    if (activeLink) {
+        setActiveNavItem(activeLink);
+    }
+    
+    currentSection = initialSection;
+}
+
+function initializeInteractiveElements() {
+    // Re-initialize any interactive elements in the loaded content
+    initializeDateInputs();
+    initializeTooltips();
+    initializeDeleteConfirmations();
+    initializeTouchFeedback();
+}
+
+// Enhanced swipe gestures for sidebar navigation
+function initializeSidebarSwipeGestures() {
     let startX = 0;
     let startY = 0;
     let endX = 0;
     let endY = 0;
     
-    document.addEventListener('touchstart', function(e) {
+    const mainContent = document.querySelector('.main-content');
+    
+    mainContent.addEventListener('touchstart', function(e) {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
     });
     
-    document.addEventListener('touchend', function(e) {
+    mainContent.addEventListener('touchend', function(e) {
         endX = e.changedTouches[0].clientX;
         endY = e.changedTouches[0].clientY;
         handleSwipe();
@@ -355,14 +519,18 @@ function initializeSwipeGestures() {
         const deltaY = endY - startY;
         const minSwipeDistance = 100;
         
-        // Horizontal swipes for navigation
+        // Horizontal swipes for section navigation
         if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-            if (deltaX > 0) {
-                // Swipe right - go back or to previous page
-                handleSwipeRight();
-            } else {
-                // Swipe left - go forward or to next page
-                handleSwipeLeft();
+            const currentIndex = sections.indexOf(currentSection);
+            
+            if (deltaX > 0 && currentIndex > 0) {
+                // Swipe right - previous section
+                loadSection(sections[currentIndex - 1]);
+                setActiveNavItem(document.querySelector(`[data-section="${sections[currentIndex - 1]}"]`));
+            } else if (deltaX < 0 && currentIndex < sections.length - 1) {
+                // Swipe left - next section
+                loadSection(sections[currentIndex + 1]);
+                setActiveNavItem(document.querySelector(`[data-section="${sections[currentIndex + 1]}"]`));
             }
         }
         
@@ -370,35 +538,22 @@ function initializeSwipeGestures() {
         if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
             if (deltaY < 0) {
                 // Swipe up - scroll to top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                mainContent.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
     }
-    
-    function handleSwipeRight() {
-        // Navigate to previous page based on current location
-        const currentPath = window.location.pathname;
-        if (currentPath === '/chores') {
-            window.location.href = '/';
-        } else if (currentPath === '/meal-plans') {
-            window.location.href = '/chores';
-        } else if (currentPath === '/notifications') {
-            window.location.href = '/meal-plans';
-        }
-    }
-    
-    function handleSwipeLeft() {
-        // Navigate to next page based on current location
-        const currentPath = window.location.pathname;
-        if (currentPath === '/') {
-            window.location.href = '/chores';
-        } else if (currentPath === '/chores') {
-            window.location.href = '/meal-plans';
-        } else if (currentPath === '/meal-plans') {
-            window.location.href = '/notifications';
-        }
-    }
 }
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', function(e) {
+    if (e.state && e.state.section) {
+        currentSection = e.state.section;
+        const activeLink = document.querySelector(`[data-section="${e.state.section}"]`);
+        if (activeLink) {
+            setActiveNavItem(activeLink);
+        }
+    }
+});
 
 // Enhanced touch feedback system
 function initializeTouchFeedback() {
