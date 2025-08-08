@@ -1,9 +1,10 @@
-from flask import session, render_template, request, redirect, url_for, flash
+from flask import session, render_template, request, redirect, url_for, flash, jsonify
 from datetime import datetime, date
 from app import app, db
 from replit_auth import require_login, require_admin, make_replit_blueprint
 from flask_login import current_user
 from models import Chore, MealPlan, Notification, User
+from calendar_api import get_meals
 
 app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
 
@@ -11,6 +12,12 @@ app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
 @app.before_request
 def make_session_permanent():
     session.permanent = True
+
+
+@app.route('/api/meals')
+def api_meals():
+    """Return dinner plans from the shared Google Calendar."""
+    return jsonify(get_meals())
 
 # Public routes
 @app.route('/')
