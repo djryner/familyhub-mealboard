@@ -17,6 +17,15 @@ function initializeApp() {
     
     // Add confirmation dialogs for delete actions
     initializeDeleteConfirmations();
+    
+    // Initialize touch enhancements
+    initializeTouchEnhancements();
+    
+    // Initialize swipe gestures
+    initializeSwipeGestures();
+    
+    // Initialize touch feedback
+    initializeTouchFeedback();
 }
 
 function initializeAlerts() {
@@ -218,13 +227,21 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Add visual feedback for better UX
+// Enhanced visual feedback for touch interactions
 function addRippleEffect(element, event) {
     const ripple = document.createElement('span');
     const rect = element.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
-    const x = event.clientX - rect.left - size / 2;
-    const y = event.clientY - rect.top - size / 2;
+    
+    // Handle both mouse and touch events
+    let x, y;
+    if (event.touches && event.touches[0]) {
+        x = event.touches[0].clientX - rect.left - size / 2;
+        y = event.touches[0].clientY - rect.top - size / 2;
+    } else {
+        x = event.clientX - rect.left - size / 2;
+        y = event.clientY - rect.top - size / 2;
+    }
     
     ripple.style.width = ripple.style.height = size + 'px';
     ripple.style.left = x + 'px';
@@ -238,11 +255,25 @@ function addRippleEffect(element, event) {
     }, 600);
 }
 
-// Add ripple effect to buttons
+// Add ripple effect to buttons and touch targets
 document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('btn')) {
+    if (e.target.classList.contains('btn') || e.target.classList.contains('touch-indicator')) {
         addRippleEffect(e.target, e);
     }
+});
+
+// Add touch event listeners for better mobile experience
+document.addEventListener('touchstart', function(e) {
+    if (e.target.classList.contains('btn') || e.target.classList.contains('touch-indicator')) {
+        addRippleEffect(e.target, e);
+        e.target.classList.add('touch-feedback');
+    }
+});
+
+document.addEventListener('touchend', function(e) {
+    setTimeout(() => {
+        e.target.classList.remove('touch-feedback');
+    }, 100);
 });
 
 // Add CSS for ripple effect
@@ -276,4 +307,200 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-console.log('Family Hub initialized successfully!');
+// Touch-specific enhancements for Raspberry Pi
+function initializeTouchEnhancements() {
+    // Add touch indicator class to interactive elements
+    const interactiveElements = document.querySelectorAll('.btn, .nav-link, .card, .alert .btn-close');
+    interactiveElements.forEach(element => {
+        element.classList.add('touch-indicator');
+    });
+    
+    // Prevent context menu on long press for better touch experience
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+    
+    // Add visual feedback for touch targets
+    document.addEventListener('touchstart', function(e) {
+        e.target.style.transform = 'scale(0.98)';
+    });
+    
+    document.addEventListener('touchend', function(e) {
+        setTimeout(() => {
+            e.target.style.transform = '';
+        }, 100);
+    });
+}
+
+// Swipe gesture navigation
+function initializeSwipeGestures() {
+    let startX = 0;
+    let startY = 0;
+    let endX = 0;
+    let endY = 0;
+    
+    document.addEventListener('touchstart', function(e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+    });
+    
+    document.addEventListener('touchend', function(e) {
+        endX = e.changedTouches[0].clientX;
+        endY = e.changedTouches[0].clientY;
+        handleSwipe();
+    });
+    
+    function handleSwipe() {
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+        const minSwipeDistance = 100;
+        
+        // Horizontal swipes for navigation
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+            if (deltaX > 0) {
+                // Swipe right - go back or to previous page
+                handleSwipeRight();
+            } else {
+                // Swipe left - go forward or to next page
+                handleSwipeLeft();
+            }
+        }
+        
+        // Vertical swipes for actions
+        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
+            if (deltaY < 0) {
+                // Swipe up - scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+    }
+    
+    function handleSwipeRight() {
+        // Navigate to previous page based on current location
+        const currentPath = window.location.pathname;
+        if (currentPath === '/chores') {
+            window.location.href = '/';
+        } else if (currentPath === '/meal-plans') {
+            window.location.href = '/chores';
+        } else if (currentPath === '/notifications') {
+            window.location.href = '/meal-plans';
+        }
+    }
+    
+    function handleSwipeLeft() {
+        // Navigate to next page based on current location
+        const currentPath = window.location.pathname;
+        if (currentPath === '/') {
+            window.location.href = '/chores';
+        } else if (currentPath === '/chores') {
+            window.location.href = '/meal-plans';
+        } else if (currentPath === '/meal-plans') {
+            window.location.href = '/notifications';
+        }
+    }
+}
+
+// Enhanced touch feedback system
+function initializeTouchFeedback() {
+    // Add haptic-like feedback through visual cues
+    const touchTargets = document.querySelectorAll('.btn, .nav-link, .card');
+    
+    touchTargets.forEach(target => {
+        target.addEventListener('touchstart', function() {
+            this.style.boxShadow = '0 0 20px rgba(var(--bs-primary-rgb), 0.5)';
+            this.style.transform = 'scale(0.95)';
+        });
+        
+        target.addEventListener('touchend', function() {
+            setTimeout(() => {
+                this.style.boxShadow = '';
+                this.style.transform = '';
+            }, 150);
+        });
+    });
+}
+
+// Touch-friendly confirmation dialogs
+function showTouchConfirmDialog(message, onConfirm) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4">
+                    <i class="fas fa-question-circle fa-3x text-warning mb-3"></i>
+                    <h4 class="mb-3">${message}</h4>
+                    <div class="d-grid gap-3">
+                        <button type="button" class="btn btn-danger btn-lg" id="confirm-yes">
+                            <i class="fas fa-check me-2"></i>Yes, Continue
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-lg" id="confirm-no">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.querySelector('#confirm-yes').addEventListener('click', function() {
+        bsModal.hide();
+        onConfirm();
+        modal.remove();
+    });
+    
+    modal.querySelector('#confirm-no').addEventListener('click', function() {
+        bsModal.hide();
+        modal.remove();
+    });
+}
+
+// Enhanced delete confirmations for touch
+function initializeDeleteConfirmations() {
+    const deleteForms = document.querySelectorAll('form[action*="delete"]');
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const itemType = form.action.includes('chore') ? 'chore' : 
+                           form.action.includes('meal') ? 'meal plan' : 'item';
+            
+            showTouchConfirmDialog(
+                `Delete this ${itemType}?`,
+                () => form.submit()
+            );
+        });
+    });
+}
+
+// Touch-optimized keyboard navigation
+document.addEventListener('keydown', function(e) {
+    // Enhanced keyboard shortcuts for touch screen with on-screen keyboard
+    
+    // Escape key to close modals or go back
+    if (e.key === 'Escape') {
+        const openModal = document.querySelector('.modal.show');
+        if (openModal) {
+            const modal = bootstrap.Modal.getInstance(openModal);
+            if (modal) modal.hide();
+        } else {
+            history.back();
+        }
+    }
+    
+    // Tab navigation enhancement
+    if (e.key === 'Tab') {
+        const focusedElement = document.activeElement;
+        if (focusedElement) {
+            focusedElement.style.outline = '3px solid var(--bs-primary)';
+            setTimeout(() => {
+                focusedElement.style.outline = '';
+            }, 2000);
+        }
+    }
+});
+
+console.log('Family Hub initialized successfully with touch optimizations!');

@@ -1,0 +1,473 @@
+/* Touch-Optimized CSS for Raspberry Pi 10" Touch Screen */
+
+/* Root variables for touch interface */
+:root {
+    --touch-target-min: 48px;
+    --touch-spacing: 16px;
+    --large-font-size: 1.2rem;
+    --xl-font-size: 1.4rem;
+    --xxl-font-size: 1.6rem;
+}
+
+/* General touch improvements */
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Allow text selection for important content */
+.selectable, p, .alert, .card-text {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Enhanced navbar for touch */
+.navbar {
+    padding: 1rem 0;
+    min-height: 70px;
+}
+
+.navbar-brand {
+    font-size: var(--xl-font-size);
+    padding: 0.75rem 1rem;
+}
+
+.navbar-nav .nav-link {
+    font-size: var(--large-font-size);
+    padding: 0.75rem 1rem !important;
+    margin: 0 0.25rem;
+    border-radius: 0.5rem;
+    min-height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.navbar-toggler {
+    padding: 0.75rem;
+    font-size: var(--large-font-size);
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+}
+
+/* Enhanced buttons for touch */
+.btn {
+    font-size: var(--large-font-size);
+    padding: 0.75rem 1.5rem;
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    margin: 0.25rem;
+}
+
+.btn:hover,
+.btn:focus {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-sm {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    min-height: 40px;
+    min-width: 40px;
+}
+
+.btn-lg {
+    font-size: var(--xl-font-size);
+    padding: 1rem 2rem;
+    min-height: 56px;
+}
+
+/* Enhanced cards for better touch interaction */
+.card {
+    border-radius: 0.75rem;
+    margin-bottom: var(--touch-spacing);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-title {
+    font-size: var(--xl-font-size);
+    margin-bottom: 1rem;
+}
+
+.card-text {
+    font-size: var(--large-font-size);
+}
+
+/* Enhanced typography for readability */
+h1 {
+    font-size: var(--xxl-font-size);
+    margin-bottom: 1.5rem;
+}
+
+h2 {
+    font-size: var(--xl-font-size);
+    margin-bottom: 1.25rem;
+}
+
+h3 {
+    font-size: var(--large-font-size);
+    margin-bottom: 1rem;
+}
+
+p, .text-muted, .lead {
+    font-size: var(--large-font-size);
+    line-height: 1.6;
+}
+
+/* Enhanced tables for touch */
+.table {
+    font-size: var(--large-font-size);
+}
+
+.table th,
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.table-responsive {
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+/* Enhanced forms for touch input */
+.form-control,
+.form-select {
+    font-size: var(--large-font-size);
+    padding: 0.75rem 1rem;
+    min-height: var(--touch-target-min);
+    border-radius: 0.5rem;
+    border: 2px solid var(--bs-border-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-width: 3px;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-label {
+    font-size: var(--large-font-size);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.form-check-input {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: 0.125rem;
+}
+
+.form-check-label {
+    font-size: var(--large-font-size);
+    margin-left: 0.75rem;
+}
+
+/* Enhanced alerts and notifications */
+.alert {
+    font-size: var(--large-font-size);
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.alert .btn-close {
+    font-size: var(--large-font-size);
+    padding: 0.75rem;
+    margin: -0.75rem -0.75rem -0.75rem auto;
+}
+
+/* Enhanced badges */
+.badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+}
+
+/* Enhanced dropdown menus */
+.dropdown-menu {
+    font-size: var(--large-font-size);
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* Enhanced modals for touch */
+.modal-content {
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 2px solid var(--bs-border-color);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 2px solid var(--bs-border-color);
+}
+
+.modal-title {
+    font-size: var(--xl-font-size);
+}
+
+.btn-close {
+    font-size: var(--large-font-size);
+    padding: 0.75rem;
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+}
+
+/* Enhanced pagination and navigation */
+.page-link {
+    font-size: var(--large-font-size);
+    padding: 0.75rem 1rem;
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+}
+
+/* Touch-friendly icon buttons */
+.btn [class*="fa-"] {
+    font-size: 1.1em;
+}
+
+.btn-sm [class*="fa-"] {
+    font-size: 1em;
+}
+
+.btn-lg [class*="fa-"] {
+    font-size: 1.2em;
+}
+
+/* Enhanced spacing for touch navigation */
+.container {
+    padding-left: var(--touch-spacing);
+    padding-right: var(--touch-spacing);
+}
+
+.row {
+    margin-left: calc(-1 * var(--touch-spacing) / 2);
+    margin-right: calc(-1 * var(--touch-spacing) / 2);
+}
+
+.col, .col-* {
+    padding-left: calc(var(--touch-spacing) / 2);
+    padding-right: calc(var(--touch-spacing) / 2);
+}
+
+/* Main content spacing */
+main.container {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    min-height: calc(100vh - 200px);
+}
+
+/* Footer adjustments */
+footer {
+    font-size: var(--large-font-size);
+    padding: 2rem 0;
+}
+
+/* Enhanced list groups */
+.list-group-item {
+    font-size: var(--large-font-size);
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem !important;
+    margin-bottom: 0.5rem;
+}
+
+/* Touch feedback animation */
+@keyframes touch-feedback {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.touch-feedback {
+    animation: touch-feedback 0.1s ease-out;
+}
+
+/* Responsive adjustments for 10" screen */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .container {
+        max-width: 95%;
+    }
+    
+    .navbar-nav {
+        flex-direction: row;
+        justify-content: center;
+    }
+    
+    .card-columns {
+        column-count: 2;
+        column-gap: 2rem;
+    }
+    
+    .table-responsive {
+        font-size: 1rem;
+    }
+    
+    .btn-group .btn {
+        margin: 0.125rem;
+    }
+}
+
+/* Landscape orientation optimizations */
+@media (orientation: landscape) {
+    .navbar {
+        padding: 0.75rem 0;
+        min-height: 60px;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 0.5rem 0.75rem !important;
+    }
+    
+    main.container {
+        margin-top: 1.5rem;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+}
+
+/* High DPI optimizations */
+@media (-webkit-min-device-pixel-ratio: 1.5), (min-resolution: 144dpi) {
+    .btn,
+    .form-control,
+    .nav-link {
+        border-width: 1px;
+    }
+    
+    .card {
+        border-width: 1px;
+    }
+}
+
+/* Dark theme enhancements for touch */
+[data-bs-theme="dark"] .btn:not(.btn-outline-*):hover {
+    filter: brightness(1.1);
+}
+
+[data-bs-theme="dark"] .card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: var(--bs-dark);
+    border-color: var(--bs-primary);
+}
+
+/* Custom touch indicators */
+.touch-indicator {
+    position: relative;
+    overflow: hidden;
+}
+
+.touch-indicator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.touch-indicator:active::after {
+    width: 100px;
+    height: 100px;
+}
+
+/* Accessibility improvements for touch */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* Focus improvements for touch navigation */
+.btn:focus,
+.nav-link:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 3px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+/* Touch-friendly scrollbars */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bs-dark);
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary);
+    border-radius: 6px;
+    border: 2px solid var(--bs-dark);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-primary);
+}
