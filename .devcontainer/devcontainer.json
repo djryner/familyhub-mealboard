@@ -1,15 +1,19 @@
 {
-  "name": "Python Dev Container",
+  "name": "Flask App",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
-  "features": {},
   "postCreateCommand": "pip install -r requirements.txt",
+  "runArgs": ["--init"],
   "customizations": {
     "vscode": {
-      "settings": {},
-      "extensions": [
-        "ms-python.python",
-        "ms-toolsai.jupyter"
-      ]
+      "extensions": ["ms-python.python"]
     }
-  }
+  },
+  "forwardPorts": [5000],
+  "portsAttributes": {
+    "5000": {
+      "label": "Flask App",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postStartCommand": "python main.py"
 }

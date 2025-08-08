@@ -5,7 +5,9 @@ from replit_auth import require_login, require_admin, make_replit_blueprint
 from flask_login import current_user
 from models import Chore, MealPlan, Notification, User
 from calendar_api import get_meals
-import datetime
+from datetime import datetime, date, timezone
+from flask import render_template, session
+from tasks_api import get_google_tasks, build_google_service, get_or_create_task_list
 
 app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
 
@@ -23,11 +25,22 @@ def api_meals():
 # Public routes
 @app.route('/')
 def index():
-    # Get recent incomplete chores
-    recent_chores = Chore.query.filter_by(completed=False).order_by(Chore.due_date.asc()).limit(5).all()
+    # Build Google Tasks API service and get tasks
+    service = build_google_service()
+    task_list_id = get_or_create_task_list(service, "Family chores")
+    all_chores = get_google_tasks(service, task_list_id)
+
+    # Filter incomplete tasks and sort by due date (None goes last)
+    pending_chores = [
+        c for c in all_chores if not c.get("completed")
+    ]
+    pending_chores.sort(key=lambda c: c.get("due_date") or datetime.max)
+
+    # Limit to 5 upcoming chores
+    recent_chores = pending_chores[:5]
 
     # Get today's date in ISO format
-    today = datetime.date.today()
+    today = date.today()
     today_str = today.isoformat()
 
     # Fetch and filter meals
@@ -36,16 +49,17 @@ def index():
 
     if "error" not in meals_data:
         for date_str in sorted(meals_data.keys()):
-            # Only include meals for today or future dates
             if date_str >= today_str:
                 for meal in meals_data[date_str]:
                     upcoming_meals.append({"date": date_str, "meal": meal})
             if len(upcoming_meals) >= 5:
-                break  # Exit early if 5 meals collected
-        upcoming_meals = upcoming_meals[:5]  # Final limit check (redundant safeguard)
+                break
+        upcoming_meals = upcoming_meals[:5]
 
     # Get active notifications
-    active_notifications = Notification.query.filter_by(is_active=True).order_by(Notification.created_at.desc()).limit(3).all()
+    active_notifications = Notification.query.filter_by(is_active=True)\
+        .order_by(Notification.created_at.desc())\
+        .limit(3).all()
 
     return render_template(
         'index.html',
@@ -56,14 +70,22 @@ def index():
     )
 
 @app.route('/chores')
-def chores():
-    all_chores = Chore.query.order_by(Chore.due_date.asc()).all()
-    return render_template('chores.html', chores=all_chores)
+def view_chores():
+    # Build authorized Google Tasks API service
+    service = build_google_service()  # This uses credentials/session
+
+    # Fetch task lists from Google API
+    task_list_id = get_or_create_task_list(service, "Family chores")
+
+    # Fetch tasks from Google Tasks API
+    chores = get_google_tasks(service, task_list_id)
+
+    return render_template('chores.html', chores=chores)
 
 @app.route('/meal-plans')
 def meal_plans():
     # Get today's date in ISO format
-    today = datetime.date.today()
+    today = date.today()
     today_str = today.isoformat()
 
     # Use get_meals() instead of MealPlan.query
@@ -83,14 +105,49 @@ def notifications():
     all_notifications = Notification.query.filter_by(is_active=True).order_by(Notification.created_at.desc()).all()
     return render_template('notifications.html', notifications=all_notifications)
 
-@app.route('/chore/<int:chore_id>/toggle')
-def toggle_chore(chore_id):
-    chore = Chore.query.get_or_404(chore_id)
-    chore.completed = not chore.completed
-    db.session.commit()
-    flash(f'Chore "{chore.title}" marked as {"completed" if chore.completed else "incomplete"}!', 'success')
-    return redirect(url_for('chores'))
+@app.route('/chore/<task_id>/toggle', methods=['POST'])
 
+@app.route('/chore/<task_id>/toggle', methods=['POST'])
+def toggle_task(task_id):
+    service = build_google_service()
+    task_list_id = get_or_create_task_list(service, "Family chores")  # Use actual list
+
+    task = service.tasks().get(tasklist=task_list_id, task=task_id).execute()
+
+    if task['status'] == 'completed':
+        task['status'] = 'needsAction'
+        task.pop('completed', None)
+    else:
+        task['status'] = 'completed'
+        task['completed'] = datetime.now(timezone.utc).isoformat()
+
+
+    service.tasks().update(tasklist=task_list_id, task=task_id, body=task).execute()
+    return redirect(url_for('view_chores'))
+
+@app.route('/chores/create', methods=['GET', 'POST'])
+def create_chore():
+    service = build_google_service()
+    task_list_id = get_or_create_task_list(service, "Family chores")
+
+    if request.method == 'POST':
+        title = request.form['title']
+        assigned_to = request.form['assigned_to']
+        due = request.form['due_date']
+
+        notes = f"Assigned to: {assigned_to}"
+
+        task = {
+            'title': title,
+            'notes': notes,
+            'due': f"{due}T23:59:59.000Z",
+            'status': 'needsAction'
+        }
+
+        service.tasks().insert(tasklist=task_list_id, body=task).execute()
+        return redirect(url_for('view_chores'))
+
+    return render_template('create_chore.html')
 # Admin routes
 @app.route('/admin')
 @require_admin
