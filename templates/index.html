@@ -109,46 +109,41 @@
     </div>
 
     <!-- Upcoming Meals -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="fas fa-utensils me-2"></i>Upcoming Meals</h4>
-                <span class="badge bg-success">{{ meals|length if meals else 0 }}</span>
-            </div>
-            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                {% if meals %}
-                    {% for meal in meals[:5] %}
-                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">{{ meal.meal_name }}</h6>
-                                <small class="text-muted">
-                                    {{ meal.planned_date.strftime('%m/%d') }} • {{ meal.meal_type.title() }}
-                                    {% if meal.assigned_cook %} • {{ meal.assigned_cook }}{% endif %}
-                                </small>
-                            </div>
-                            {% if meal.prep_time %}
-                                <span class="badge bg-info">{{ meal.prep_time }}m</span>
-                            {% endif %}
+<div class="col-lg-6 mb-4">
+    <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="fas fa-utensils me-2"></i>Upcoming Meals</h4>
+            <span class="badge bg-success">{{ meals|length if meals else 0 }}</span>
+        </div>
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            {% if meals %}
+                {% for meal in meals[:5] %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ meal.meal.title() }}</h6>
+                            <small class="text-muted">
+                                {{ meal.date }}
+                            </small>
                         </div>
-                    {% endfor %}
-                    {% if meals|length > 5 %}
-                        <div class="text-center">
-                            <small class="text-muted">...and {{ meals|length - 5 }} more meals</small>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-calendar-plus fa-4x text-info mb-3"></i>
-                        <h5>No Meals Planned</h5>
-                        <p class="text-muted">Schedule your next meal</p>
-                        {% if current_user.is_authenticated and current_user.is_admin %}
-                            <a href="{{ url_for('admin_manage_meals') }}" class="btn btn-primary btn-lg">
-                                <i class="fas fa-plus me-1"></i>Add Meal
-                            </a>
-                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if meals|length > 5 %}
+                    <div class="text-center">
+                        <small class="text-muted">...and {{ meals|length - 5 }} more meals</small>
                     </div>
                 {% endif %}
-            </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-plus fa-4x text-info mb-3"></i>
+                    <h5>No Meals Planned</h5>
+                    <p class="text-muted">Schedule your next meal</p>
+                    {% if current_user.is_authenticated and current_user.is_admin %}
+                        <a href="{{ url_for('admin_manage_meals') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-1"></i>Add Meal
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

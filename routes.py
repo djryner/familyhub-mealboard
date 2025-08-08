@@ -5,6 +5,7 @@ from replit_auth import require_login, require_admin, make_replit_blueprint
 from flask_login import current_user
 from models import Chore, MealPlan, Notification, User
 from calendar_api import get_meals
+import datetime
 
 app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
 
@@ -22,14 +23,37 @@ def api_meals():
 # Public routes
 @app.route('/')
 def index():
+    # Get recent incomplete chores
     recent_chores = Chore.query.filter_by(completed=False).order_by(Chore.due_date.asc()).limit(5).all()
-    upcoming_meals = MealPlan.query.filter(MealPlan.planned_date >= date.today()).order_by(MealPlan.planned_date.asc()).limit(5).all()
+
+    # Get today's date in ISO format
+    today = datetime.date.today()
+    today_str = today.isoformat()
+
+    # Fetch and filter meals
+    meals_data = get_meals()
+    upcoming_meals = []
+
+    if "error" not in meals_data:
+        for date_str in sorted(meals_data.keys()):
+            # Only include meals for today or future dates
+            if date_str >= today_str:
+                for meal in meals_data[date_str]:
+                    upcoming_meals.append({"date": date_str, "meal": meal})
+            if len(upcoming_meals) >= 5:
+                break  # Exit early if 5 meals collected
+        upcoming_meals = upcoming_meals[:5]  # Final limit check (redundant safeguard)
+
+    # Get active notifications
     active_notifications = Notification.query.filter_by(is_active=True).order_by(Notification.created_at.desc()).limit(3).all()
-    
-    return render_template('index.html', 
-                         chores=recent_chores, 
-                         meals=upcoming_meals, 
-                         notifications=active_notifications)
+
+    return render_template(
+        'index.html',
+        chores=recent_chores,
+        meals=upcoming_meals,
+        notifications=active_notifications,
+        today=today_str
+    )
 
 @app.route('/chores')
 def chores():
@@ -38,8 +62,21 @@ def chores():
 
 @app.route('/meal-plans')
 def meal_plans():
-    upcoming_meals = MealPlan.query.filter(MealPlan.planned_date >= date.today()).order_by(MealPlan.planned_date.asc()).all()
-    return render_template('meal_plans.html', meals=upcoming_meals)
+    # Get today's date in ISO format
+    today = datetime.date.today()
+    today_str = today.isoformat()
+
+    # Use get_meals() instead of MealPlan.query
+    meals_data = get_meals()
+    if "error" in meals_data:
+        meals = []
+    else:
+        # Flatten to a list of dicts for template
+        meals = []
+        for date_str in sorted(meals_data.keys()):
+            for meal in meals_data[date_str]:
+                meals.append({"date": date_str, "meal": meal})
+    return render_template('meal_plans.html', meals=meals, today=today_str)
 
 @app.route('/notifications')
 def notifications():

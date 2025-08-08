@@ -660,3 +660,9 @@ p, .text-muted, .lead {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--bs-primary);
 }
+
+/* Dimmed styling for past meal cards */
+.past-meal {
+    opacity: 0.5;
+    filter: grayscale(100%);
+}

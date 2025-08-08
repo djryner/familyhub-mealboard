@@ -1,0 +1,11 @@
+flask
+flask_login
+flask_dance
+flask_sqlalchemy
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+python-dateutil
+pytz
+python-dotenv
