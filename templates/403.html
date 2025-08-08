@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - Family Hub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="py-5">
+            <i class="fas fa-lock fa-5x text-danger mb-4"></i>
+            <h1 class="display-4 text-danger">403</h1>
+            <h2 class="mb-3">Access Denied</h2>
+            <p class="lead text-muted mb-4">
+                You don't have permission to access this area. This section is restricted to admin users only.
+            </p>
+            
+            <div class="d-grid gap-2 d-md-block">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-home me-1"></i>Go to Family Hub
+                </a>
+                {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-sign-in-alt me-1"></i>Admin Login
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="alert alert-info">
+            <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>About Access Levels</h5>
+            <hr>
+            <p class="mb-1"><strong>Public Access:</strong> Anyone can view chores, meal plans, and notifications</p>
+            <p class="mb-0"><strong>Admin Access:</strong> Requires login and admin permissions to manage family content</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

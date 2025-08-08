@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Family Hub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-tachometer-alt me-2"></i>Family Dashboard</h1>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-cog me-1"></i>Admin Panel
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Section with Hero Image -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card bg-primary text-white">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="card-title">Welcome to Your Family Hub</h2>
+                        <p class="card-text lead">Stay organized with chores, meal planning, and family notifications all in one place.</p>
+                        {% if not current_user.is_authenticated %}
+                            <a href="{{ url_for('replit_auth.login') }}" class="btn btn-light btn-lg">
+                                <i class="fas fa-sign-in-alt me-1"></i>Admin Login
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-home fa-5x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Notifications -->
+{% if notifications %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h3><i class="fas fa-bell me-2"></i>Recent Notifications</h3>
+        {% for notification in notifications %}
+            <div class="alert alert-{{ notification.type }} alert-dismissible fade show" role="alert">
+                <strong>{{ notification.title }}</strong> - {{ notification.message }}
+                <small class="d-block mt-1 opacity-75">{{ notification.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+            </div>
+        {% endfor %}
+        <a href="{{ url_for('notifications') }}" class="btn btn-outline-secondary btn-sm">View All Notifications</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Overview Cards -->
+<div class="row">
+    <!-- Upcoming Chores -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Upcoming Chores</h5>
+                <a href="{{ url_for('chores') }}" class="btn btn-outline-secondary btn-sm">View All</a>
+            </div>
+            <div class="card-body">
+                {% if chores %}
+                    <div class="list-group list-group-flush">
+                        {% for chore in chores %}
+                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ chore.title }}</div>
+                                    <small class="text-muted">
+                                        {% if chore.assigned_to %}Assigned to: {{ chore.assigned_to }}{% endif %}
+                                        {% if chore.due_date %} | Due: {{ chore.due_date.strftime('%m/%d/%Y') }}{% endif %}
+                                    </small>
+                                </div>
+                                <span class="badge bg-{{ 'danger' if chore.priority == 'high' else 'warning' if chore.priority == 'medium' else 'secondary' }} rounded-pill">
+                                    {{ chore.priority }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <p class="text-muted">All chores completed! Great job!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Meals -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-utensils me-2"></i>Upcoming Meals</h5>
+                <a href="{{ url_for('meal_plans') }}" class="btn btn-outline-secondary btn-sm">View All</a>
+            </div>
+            <div class="card-body">
+                {% if meals %}
+                    <div class="list-group list-group-flush">
+                        {% for meal in meals %}
+                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ meal.meal_name }}</div>
+                                    <small class="text-muted">
+                                        {{ meal.planned_date.strftime('%m/%d/%Y') }} - {{ meal.meal_type.title() }}
+                                        {% if meal.assigned_cook %} | Cook: {{ meal.assigned_cook }}{% endif %}
+                                    </small>
+                                </div>
+                                {% if meal.prep_time %}
+                                    <span class="badge bg-info rounded-pill">{{ meal.prep_time }}min</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-plus fa-3x text-info mb-3"></i>
+                        <p class="text-muted">No meal plans scheduled yet.</p>
+                        {% if current_user.is_authenticated and current_user.is_admin %}
+                            <a href="{{ url_for('admin_manage_meals') }}" class="btn btn-primary">Add Meal Plan</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Family Activities Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h3><i class="fas fa-heart me-2"></i>Family Activities</h3>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-broom fa-2x text-primary mb-2"></i>
+                        <h6 class="card-title">Cleaning Day</h6>
+                        <p class="card-text small">Work together to keep our home tidy</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-utensils fa-2x text-success mb-2"></i>
+                        <h6 class="card-title">Cooking Together</h6>
+                        <p class="card-text small">Share meals and create memories</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-gamepad fa-2x text-warning mb-2"></i>
+                        <h6 class="card-title">Game Night</h6>
+                        <p class="card-text small">Fun activities for the whole family</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-leaf fa-2x text-info mb-2"></i>
+                        <h6 class="card-title">Garden Care</h6>
+                        <p class="card-text small">Tend to our plants and outdoor spaces</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Meal Plans - Family Hub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-utensils me-2"></i>Meal Plans</h1>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('admin_manage_meals') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Manage Meals
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if meals %}
+    <!-- Meal Type Filter -->
+    <ul class="nav nav-tabs mb-4" id="mealTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-meals-tab" data-bs-toggle="tab" data-bs-target="#all-meals" type="button" role="tab">
+                <i class="fas fa-utensils me-1"></i>All Meals
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="breakfast-tab" data-bs-toggle="tab" data-bs-target="#breakfast" type="button" role="tab">
+                <i class="fas fa-coffee me-1"></i>Breakfast
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="lunch-tab" data-bs-toggle="tab" data-bs-target="#lunch" type="button" role="tab">
+                <i class="fas fa-hamburger me-1"></i>Lunch
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="dinner-tab" data-bs-toggle="tab" data-bs-target="#dinner" type="button" role="tab">
+                <i class="fas fa-pizza-slice me-1"></i>Dinner
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="mealTabContent">
+        <!-- All Meals -->
+        <div class="tab-pane fade show active" id="all-meals" role="tabpanel">
+            <div class="row">
+                {% for meal in meals %}
+                    <div class="col-md-6 col-xl-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{{ 'warning' if meal.meal_type == 'breakfast' else 'info' if meal.meal_type == 'lunch' else 'primary' if meal.meal_type == 'dinner' else 'secondary' }}">
+                                    <i class="fas fa-{{ 'coffee' if meal.meal_type == 'breakfast' else 'hamburger' if meal.meal_type == 'lunch' else 'pizza-slice' if meal.meal_type == 'dinner' else 'cookie-bite' }} me-1"></i>
+                                    {{ meal.meal_type.title() }}
+                                </span>
+                                <small class="text-muted">{{ meal.planned_date.strftime('%m/%d/%Y') }}</small>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ meal.meal_name }}</h5>
+                                
+                                <div class="mb-3">
+                                    {% if meal.assigned_cook %}
+                                        <div class="small text-muted mb-1">
+                                            <i class="fas fa-user-chef me-1"></i>Cook: {{ meal.assigned_cook }}
+                                        </div>
+                                    {% endif %}
+                                    {% if meal.prep_time %}
+                                        <div class="small text-muted">
+                                            <i class="fas fa-clock me-1"></i>Prep time: {{ meal.prep_time }} minutes
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                {% if meal.ingredients %}
+                                    <div class="mb-3">
+                                        <h6 class="text-primary mb-2"><i class="fas fa-list me-1"></i>Ingredients:</h6>
+                                        <p class="card-text small">{{ meal.ingredients }}</p>
+                                    </div>
+                                {% endif %}
+
+                                {% if meal.instructions %}
+                                    <div class="mb-3">
+                                        <h6 class="text-success mb-2"><i class="fas fa-list-ol me-1"></i>Instructions:</h6>
+                                        <p class="card-text small">{{ meal.instructions }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer text-muted small">
+                                <i class="fas fa-calendar-plus me-1"></i>Planned for {{ meal.planned_date.strftime('%A, %B %d, %Y') }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Breakfast -->
+        <div class="tab-pane fade" id="breakfast" role="tabpanel">
+            <div class="row">
+                {% for meal in meals if meal.meal_type == 'breakfast' %}
+                    <div class="col-md-6 col-xl-4 mb-4">
+                        <div class="card h-100 border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <i class="fas fa-coffee me-1"></i>{{ meal.planned_date.strftime('%A, %B %d') }}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ meal.meal_name }}</h5>
+                                {% if meal.assigned_cook %}
+                                    <p class="text-muted small"><i class="fas fa-user-chef me-1"></i>{{ meal.assigned_cook }}</p>
+                                {% endif %}
+                                {% if meal.ingredients %}
+                                    <div class="mb-2">
+                                        <h6 class="text-primary">Ingredients:</h6>
+                                        <p class="small">{{ meal.ingredients }}</p>
+                                    </div>
+                                {% endif %}
+                                {% if meal.instructions %}
+                                    <div>
+                                        <h6 class="text-success">Instructions:</h6>
+                                        <p class="small">{{ meal.instructions }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 text-center py-4">
+                        <i class="fas fa-coffee fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No breakfast plans scheduled.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Lunch -->
+        <div class="tab-pane fade" id="lunch" role="tabpanel">
+            <div class="row">
+                {% for meal in meals if meal.meal_type == 'lunch' %}
+                    <div class="col-md-6 col-xl-4 mb-4">
+                        <div class="card h-100 border-info">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-hamburger me-1"></i>{{ meal.planned_date.strftime('%A, %B %d') }}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ meal.meal_name }}</h5>
+                                {% if meal.assigned_cook %}
+                                    <p class="text-muted small"><i class="fas fa-user-chef me-1"></i>{{ meal.assigned_cook }}</p>
+                                {% endif %}
+                                {% if meal.ingredients %}
+                                    <div class="mb-2">
+                                        <h6 class="text-primary">Ingredients:</h6>
+                                        <p class="small">{{ meal.ingredients }}</p>
+                                    </div>
+                                {% endif %}
+                                {% if meal.instructions %}
+                                    <div>
+                                        <h6 class="text-success">Instructions:</h6>
+                                        <p class="small">{{ meal.instructions }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 text-center py-4">
+                        <i class="fas fa-hamburger fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No lunch plans scheduled.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Dinner -->
+        <div class="tab-pane fade" id="dinner" role="tabpanel">
+            <div class="row">
+                {% for meal in meals if meal.meal_type == 'dinner' %}
+                    <div class="col-md-6 col-xl-4 mb-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-pizza-slice me-1"></i>{{ meal.planned_date.strftime('%A, %B %d') }}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ meal.meal_name }}</h5>
+                                {% if meal.assigned_cook %}
+                                    <p class="text-muted small"><i class="fas fa-user-chef me-1"></i>{{ meal.assigned_cook }}</p>
+                                {% endif %}
+                                {% if meal.ingredients %}
+                                    <div class="mb-2">
+                                        <h6 class="text-primary">Ingredients:</h6>
+                                        <p class="small">{{ meal.ingredients }}</p>
+                                    </div>
+                                {% endif %}
+                                {% if meal.instructions %}
+                                    <div>
+                                        <h6 class="text-success">Instructions:</h6>
+                                        <p class="small">{{ meal.instructions }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 text-center py-4">
+                        <i class="fas fa-pizza-slice fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No dinner plans scheduled.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-utensils fa-4x text-muted mb-4"></i>
+        <h3>No meal plans scheduled</h3>
+        <p class="text-muted">Family meal plans will appear here once they're created.</p>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('admin_manage_meals') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Add First Meal Plan
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

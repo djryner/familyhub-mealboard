@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Chores - Family Hub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-tasks me-2"></i>Family Chores</h1>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('admin_manage_chores') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Manage Chores
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if chores %}
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-4" id="choreTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                <i class="fas fa-list me-1"></i>All Chores
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                <i class="fas fa-clock me-1"></i>Pending
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
+                <i class="fas fa-check me-1"></i>Completed
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="choreTabContent">
+        <!-- All Chores -->
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
+            <div class="row">
+                {% for chore in chores %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 {{ 'border-success' if chore.completed else 'border-warning' if chore.priority == 'high' else '' }}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{{ 'success' if chore.completed else 'danger' if chore.priority == 'high' else 'warning' if chore.priority == 'medium' else 'secondary' }}">
+                                    {{ 'Completed' if chore.completed else chore.priority.title() + ' Priority' }}
+                                </span>
+                                {% if chore.category %}
+                                    <small class="text-muted">{{ chore.category.title() }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title {{ 'text-decoration-line-through text-muted' if chore.completed else '' }}">
+                                    {{ chore.title }}
+                                </h5>
+                                {% if chore.description %}
+                                    <p class="card-text">{{ chore.description }}</p>
+                                {% endif %}
+                                <div class="small text-muted">
+                                    {% if chore.assigned_to %}
+                                        <div><i class="fas fa-user me-1"></i>Assigned to: {{ chore.assigned_to }}</div>
+                                    {% endif %}
+                                    {% if chore.due_date %}
+                                        <div><i class="fas fa-calendar me-1"></i>Due: {{ chore.due_date.strftime('%B %d, %Y') }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{{ url_for('toggle_chore', chore_id=chore.id) }}" 
+                                   class="btn btn-{{ 'secondary' if chore.completed else 'success' }} btn-sm">
+                                    <i class="fas fa-{{ 'undo' if chore.completed else 'check' }} me-1"></i>
+                                    {{ 'Mark Incomplete' if chore.completed else 'Mark Complete' }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Pending Chores -->
+        <div class="tab-pane fade" id="pending" role="tabpanel">
+            <div class="row">
+                {% for chore in chores if not chore.completed %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 {{ 'border-warning' if chore.priority == 'high' else '' }}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{{ 'danger' if chore.priority == 'high' else 'warning' if chore.priority == 'medium' else 'secondary' }}">
+                                    {{ chore.priority.title() }} Priority
+                                </span>
+                                {% if chore.category %}
+                                    <small class="text-muted">{{ chore.category.title() }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ chore.title }}</h5>
+                                {% if chore.description %}
+                                    <p class="card-text">{{ chore.description }}</p>
+                                {% endif %}
+                                <div class="small text-muted">
+                                    {% if chore.assigned_to %}
+                                        <div><i class="fas fa-user me-1"></i>Assigned to: {{ chore.assigned_to }}</div>
+                                    {% endif %}
+                                    {% if chore.due_date %}
+                                        <div><i class="fas fa-calendar me-1"></i>Due: {{ chore.due_date.strftime('%B %d, %Y') }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{{ url_for('toggle_chore', chore_id=chore.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-check me-1"></i>Mark Complete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                            <h3>All chores completed!</h3>
+                            <p class="text-muted">Great job keeping the family organized!</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Completed Chores -->
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            <div class="row">
+                {% for chore in chores if chore.completed %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 border-success">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-success">Completed</span>
+                                {% if chore.category %}
+                                    <small class="text-muted">{{ chore.category.title() }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title text-decoration-line-through text-muted">{{ chore.title }}</h5>
+                                {% if chore.description %}
+                                    <p class="card-text text-muted">{{ chore.description }}</p>
+                                {% endif %}
+                                <div class="small text-muted">
+                                    {% if chore.assigned_to %}
+                                        <div><i class="fas fa-user me-1"></i>Assigned to: {{ chore.assigned_to }}</div>
+                                    {% endif %}
+                                    {% if chore.due_date %}
+                                        <div><i class="fas fa-calendar me-1"></i>Due: {{ chore.due_date.strftime('%B %d, %Y') }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{{ url_for('toggle_chore', chore_id=chore.id) }}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-undo me-1"></i>Mark Incomplete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="fas fa-list-check fa-4x text-muted mb-3"></i>
+                            <h3>No completed chores yet</h3>
+                            <p class="text-muted">Complete some chores to see them here!</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-tasks fa-4x text-muted mb-4"></i>
+        <h3>No chores assigned yet</h3>
+        <p class="text-muted">Family chores will appear here once they're created.</p>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('admin_manage_chores') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Add First Chore
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-users me-2"></i>Manage Family Members</h1>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Admin
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if users %}
+    <div class="row">
+        <div class="col-12">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if user.profile_image_url %}
+                                            <img src="{{ user.profile_image_url }}" alt="Profile" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                                        {% else %}
+                                            <i class="fas fa-user-circle fa-2x me-2 text-muted"></i>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ user.first_name ~ ' ' ~ user.last_name if user.first_name else 'No Name' }}</strong>
+                                            {% if user.id == current_user.id %}
+                                                <span class="badge bg-info ms-1">You</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ user.email or 'No email' }}</td>
+                                <td>
+                                    {% if user.is_admin %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-crown me-1"></i>Admin
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-user me-1"></i>Family Member
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.created_at.strftime('%m/%d/%Y') }}</td>
+                                <td>
+                                    {% if user.id != current_user.id %}
+                                        <form method="POST" action="{{ url_for('admin_toggle_user_admin', user_id=user.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-{{ 'warning' if user.is_admin else 'success' }} btn-sm"
+                                                    onclick="return confirm('Are you sure you want to {{ \'remove admin rights from\' if user.is_admin else \'grant admin rights to\' }} this user?')">
+                                                <i class="fas fa-{{ 'user-minus' if user.is_admin else 'user-plus' }} me-1"></i>
+                                                {{ 'Remove Admin' if user.is_admin else 'Make Admin' }}
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted small">Cannot modify your own role</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Info -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>User Management Information</h5>
+                <p class="mb-2"><strong>Admin Users:</strong> Can access the admin dashboard, manage chores, meal plans, and notifications.</p>
+                <p class="mb-2"><strong>Family Members:</strong> Can view chores, meal plans, and notifications, but cannot manage them.</p>
+                <p class="mb-0"><strong>New Users:</strong> Family members are automatically added when they first log in. The first user becomes an admin automatically.</p>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-users fa-4x text-muted mb-4"></i>
+        <h3>No users found</h3>
+        <p class="text-muted">Family members will appear here when they log in for the first time.</p>
+    </div>
+{% endif %}
+{% endblock %}

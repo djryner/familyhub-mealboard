@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Family Hub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-cog me-2"></i>Admin Dashboard</h1>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Family Hub
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="row mb-5">
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-tasks fa-2x mb-2"></i>
+                <h4>{{ total_chores }}</h4>
+                <p class="mb-0">Total Chores</p>
+                <small>{{ completed_chores }} completed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-utensils fa-2x mb-2"></i>
+                <h4>{{ total_meals }}</h4>
+                <p class="mb-0">Meal Plans</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-bell fa-2x mb-2"></i>
+                <h4>{{ active_notifications }}</h4>
+                <p class="mb-0">Active Notifications</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4>{{ total_users }}</h4>
+                <p class="mb-0">Family Members</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Manage Chores</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Add, edit, and organize family chores. Assign tasks to family members and track completion.</p>
+                <a href="{{ url_for('admin_manage_chores') }}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i>Manage Chores
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-utensils me-2"></i>Manage Meals</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Plan family meals, add recipes, and assign cooking responsibilities for the week.</p>
+                <a href="{{ url_for('admin_manage_meals') }}" class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i>Manage Meals
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Manage Users</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">View family members, manage admin permissions, and oversee user access.</p>
+                <a href="{{ url_for('admin_manage_users') }}" class="btn btn-warning">
+                    <i class="fas fa-user-cog me-1"></i>Manage Users
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Add Notification -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Quick Add Notification</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_new_notification') }}">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="col-md-5 mb-3">
+                            <label for="message" class="form-label">Message</label>
+                            <input type="text" class="form-control" id="message" name="message" required>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="type" class="form-label">Type</label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="info">Info</option>
+                                <option value="success">Success</option>
+                                <option value="warning">Warning</option>
+                                <option value="danger">Important</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="expires_at" class="form-label">Expires At (Optional)</label>
+                            <input type="datetime-local" class="form-control" id="expires_at" name="expires_at">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
