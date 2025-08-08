@@ -5,13 +5,133 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Family Hub — Dinner Plan</title>
   <style>
-    body { font-family: system-ui, Roboto, Segoe UI, Arial; margin: 0; background: #0b0f14; color: #e6edf3; }
-    header { padding: 16px 20px; font-size: 20px; font-weight: 600; border-bottom: 1px solid #1f2833; position: sticky; top: 0; background: #0b0f14; z-index: 10; }
-    .grid { display: grid; gap: 12px; padding: 16px; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); }
-    .card { border: 1px solid #1f2833; border-radius: 14px; padding: 12px; background: #11161d; }
-    .date { opacity: .8; font-size: 14px; margin-bottom: 8px; }
-    .today { outline: 2px solid #3b82f6; }
-    ul { margin: 0; padding-left: 18px; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      margin: 0; 
+      background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%); 
+      color: #e6edf3; 
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    header { 
+      padding: 24px 32px; 
+      font-size: 28px; 
+      font-weight: 700; 
+      background: rgba(11, 15, 20, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #2d3748; 
+      position: sticky; 
+      top: 0; 
+      z-index: 10;
+      text-align: center;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .grid { 
+      display: grid; 
+      gap: 20px; 
+      padding: 32px 24px; 
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .card { 
+      border: 1px solid #2d3748; 
+      border-radius: 16px; 
+      padding: 20px; 
+      background: linear-gradient(145deg, #1a202c 0%, #2d3748 100%);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #4299e1, #63b3ed);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      border-color: #4a5568;
+    }
+    .card:hover::before {
+      opacity: 1;
+    }
+    .date { 
+      font-size: 16px; 
+      font-weight: 600;
+      margin-bottom: 16px; 
+      color: #a0aec0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .today { 
+      border: 2px solid #4299e1;
+      background: linear-gradient(145deg, #2a4365 0%, #3182ce 100%);
+      box-shadow: 0 0 20px rgba(66, 153, 225, 0.3);
+    }
+    .today::before {
+      opacity: 1;
+      background: linear-gradient(90deg, #63b3ed, #90cdf4);
+    }
+    .today .date {
+      color: #90cdf4;
+      font-weight: 700;
+    }
+    ul { 
+      margin: 0; 
+      padding: 0; 
+      list-style: none;
+    }
+    li {
+      padding: 8px 0;
+      font-size: 15px;
+      color: #e2e8f0;
+      position: relative;
+      padding-left: 20px;
+    }
+    li::before {
+      content: '🍽️';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      font-size: 14px;
+    }
+    li:not(:last-child) {
+      border-bottom: 1px solid rgba(45, 55, 72, 0.5);
+      margin-bottom: 8px;
+      padding-bottom: 12px;
+    }
+    .no-meals {
+      color: #718096;
+      font-style: italic;
+      opacity: 0.8;
+    }
+    .no-meals::before {
+      content: '✨';
+    }
+    @media (max-width: 768px) {
+      header {
+        padding: 20px 16px;
+        font-size: 24px;
+      }
+      .grid {
+        padding: 20px 16px;
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .card {
+        padding: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -27,7 +147,11 @@
         return;
       }
       Object.keys(data).sort().forEach(d => {
-        const li = (data[d].length ? data[d] : ['No dinner planned']).map(x=>`<li>${x}</li>`).join('');
+        const meals = data[d].length ? data[d] : ['No dinner planned'];
+        const li = meals.map(x => {
+          const isNoMeal = x === 'No dinner planned';
+          return `<li class="${isNoMeal ? 'no-meals' : ''}">${x}</li>`;
+        }).join('');
         const div = document.createElement('div');
         div.className = 'card' + (d === today ? ' today' : '');
         const dateTxt = new Date(d + 'T00:00').toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' });
