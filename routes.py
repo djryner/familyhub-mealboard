@@ -24,126 +24,170 @@ from flask import (
 from app import app, db
 from calendar_api import get_meals  # legacy JSON endpoint still uses mapping
 from tasks_api import build_google_service, get_or_create_task_list
-from services.chores_service import fetch_chores, complete_chore as service_complete_chore, ChoreDTO
+from services.chores_service import (
+    fetch_chores,
+    complete_chore as service_complete_chore,
+    ChoreDTO,
+)
 from services.meals_service import fetch_meals, MealDTO
 from models import ChoreTemplate
 
 logger = logging.getLogger("dashboard")
 
 
-#app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
+# app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
+
 
 # Make session permanent
 @app.before_request
 def make_session_permanent():
+    """Sets the Flask session to be permanent."""
     session.permanent = True
 
 
-@app.route('/api/meals')
+@app.route("/api/meals")
 def api_meals():
-    """Return dinner plans from the shared Google Calendar."""
+    """Return dinner plans from the shared Google Calendar (legacy)."""
     return jsonify(get_meals())
 
+
 # Public routes
-@app.route('/')
-def index():  # noqa: D401
+@app.route("/")
+def index():
+    """Renders the main dashboard page.
+
+    This page displays a summary of upcoming chores and meals for the week.
+    """
     logger.info("index: start")
 
-    # Unified chores source: fetch upcoming (incomplete) chores
+    # Fetch up to 5 upcoming (incomplete) chores
     recent_chores: list[ChoreDTO] = fetch_chores(include_completed=False, limit=5)
     logger.info("index: loaded %d chores", len(recent_chores))
 
+    # Fetch meals for the next 7 days
     today = date.today()
-    end = today + timedelta(days=6)
-    meals: list[MealDTO] = fetch_meals(start=today, end=end)
-    # Cap to 7 (already sorted inside service)
+    end_date = today + timedelta(days=6)
+    meals: list[MealDTO] = fetch_meals(start=today, end=end_date)
+
+    # Cap the number of meals to 7, as the service might return more
     if len(meals) > 7:
         meals = meals[:7]
-    logger.info("index: meals final_count=%d window=%s..%s", len(meals), today, end)
+    logger.info(
+        "index: meals final_count=%d window=%s..%s", len(meals), today, end_date
+    )
     for m in meals:  # pragma: no cover (log only)
         logger.info("index: meal %s %s", m.date.isoformat(), m.title)
 
-    return render_template(
-        'index.html',
-        chores=recent_chores,
-        meals=meals,
-        today=today
-    )
+    return render_template("index.html", chores=recent_chores, meals=meals, today=today)
 
-@app.route('/chores')
+
+@app.route("/chores")
 def view_chores():
+    """Renders the page that displays all chores, including completed ones."""
     logger.info("view_chores: loading all chores (include completed)")
     chores: list[ChoreDTO] = fetch_chores(include_completed=True)
     logger.info("view_chores: loaded %d chores", len(chores))
-    return render_template('chores.html', chores=chores)
+    return render_template("chores.html", chores=chores)
 
-@app.route('/meal-plans')
+
+@app.route("/meal-plans")
 def meal_plans():
+    """Renders the page displaying all meal plans from the calendar."""
     today = date.today()
-    # broaden window for plans - reuse calendar_service default (today +/- days)
-    meals = fetch_meals()  # full range from service; template will list all
-    return render_template('meal_plans.html', meals=[{"date": m.date.isoformat(), "meal": m.title} for m in meals], today=today.isoformat())
+    # Fetch all available meals from the service (uses service's default date window)
+    meals = fetch_meals()
+    # Format meals for template consumption
+    meal_data = [{"date": m.date.isoformat(), "meal": m.title} for m in meals]
+    return render_template("meal_plans.html", meals=meal_data, today=today.isoformat())
 
-@app.route('/chore/<task_id>/toggle', methods=['POST'])
-def toggle_task(task_id):  # legacy endpoint: mark complete only
+
+@app.route("/chore/<task_id>/toggle", methods=["POST"])
+def toggle_task(task_id):
+    """Legacy endpoint to mark a chore as complete."""
     service_complete_chore(task_id)
-    return redirect(url_for('view_chores'))
+    return redirect(url_for("view_chores"))
 
-@app.route('/api/chore-categories')
+
+@app.route("/api/chore-categories")
 def api_chore_categories():
-    cats = db.session.query(ChoreTemplate.category)\
-        .filter(ChoreTemplate.is_active == True)\
-        .distinct().order_by(ChoreTemplate.category.asc()).all()
-    return jsonify([c[0] for c in cats])
+    """Returns a JSON list of unique, active chore categories."""
+    categories_query = (
+        db.session.query(ChoreTemplate.category)
+        .filter(ChoreTemplate.is_active.is_(True))
+        .distinct()
+        .order_by(ChoreTemplate.category.asc())
+        .all()
+    )
+    return jsonify([c[0] for c in categories_query])
 
-@app.route('/api/chore-templates')
+
+@app.route("/api/chore-templates")
 def api_chore_templates():
-    category = request.args.get('category')
-    q = ChoreTemplate.query.filter_by(is_active=True)
+    """Returns a JSON list of active chore templates, optionally filtered by category."""
+    category = request.args.get("category")
+    query = ChoreTemplate.query.filter_by(is_active=True)
     if category:
-        q = q.filter(ChoreTemplate.category == category)
-    items = q.order_by(ChoreTemplate.name.asc()).all()
-    return jsonify([{"id": t.id, "name": t.name, "category": t.category} for t in items])
+        query = query.filter(ChoreTemplate.category == category)
+    items = query.order_by(ChoreTemplate.name.asc()).all()
+    return jsonify(
+        [{"id": t.id, "name": t.name, "category": t.category} for t in items]
+    )
 
-def format_meals_for_template(meals):  # legacy helper (unused) kept for compatibility
+
+def format_meals_for_template(meals):
+    """DEPRECATED: Legacy helper to format meals. Kept for compatibility."""
     formatted = []
     for meal in meals:
-        formatted.append({"meal": getattr(meal, 'title', meal.get('meal')), "date": getattr(meal, 'date', meal.get('date'))})
+        formatted.append(
+            {
+                "meal": getattr(meal, "title", meal.get("meal")),
+                "date": getattr(meal, "date", meal.get("date")),
+            }
+        )
     return formatted
 
-@app.route('/chores/create', methods=['GET', 'POST'])
+
+@app.route("/chores/create", methods=["GET", "POST"])
 def create_chore():
+    """Handles the creation of a new chore from a template."""
     service = build_google_service()
     task_list_id = get_or_create_task_list(service, "Family chores")
 
-    if request.method == 'POST':
-        template_id = request.form['template_id']           # selected chore template
-        assigned_to = request.form['assigned_to']
-        due = request.form['due_date']                      # YYYY-MM-DD
+    if request.method == "POST":
+        # Process the form submission to create a new task in Google Tasks
+        template_id = request.form["template_id"]  # Selected chore template
+        assigned_to = request.form["assigned_to"]
+        due = request.form["due_date"]  # YYYY-MM-DD
 
         tmpl = ChoreTemplate.query.get_or_404(template_id)
         title = tmpl.name
         notes = f"Assigned to: {assigned_to}"
 
+        # Construct the task payload for the Google Tasks API
         task = {
             "title": title,
             "notes": notes,
-            "due": f"{due}T23:59:59.000Z",
-            "status": "needsAction"
+            "due": f"{due}T23:59:59.000Z",  # Set due time to end of day UTC
+            "status": "needsAction",
         }
         service.tasks().insert(tasklist=task_list_id, body=task).execute()
-        return redirect(url_for('view_chores'))
+        flash(f"Chore '{title}' created successfully!", "success")
+        return redirect(url_for("view_chores"))
 
-    # initial render: provide categories for the first dropdown
-    categories = [c[0] for c in db.session.query(ChoreTemplate.category)
-                  .filter(ChoreTemplate.is_active == True)
-                  .distinct().order_by(ChoreTemplate.category.asc()).all()]
-    return render_template('create_chore.html', categories=categories)
+    # For a GET request, render the form with the list of categories
+    categories = [
+        c[0]
+        for c in db.session.query(ChoreTemplate.category)
+        .filter(ChoreTemplate.is_active.is_(True))
+        .distinct()
+        .order_by(ChoreTemplate.category.asc())
+        .all()
+    ]
+    return render_template("create_chore.html", categories=categories)
 
 
-@app.post('/chores/<string:chore_id>/complete', endpoint='complete_chore')
-def complete_chore_route(chore_id):  # AJAX endpoint used by dashboard cards
+@app.post("/chores/<string:chore_id>/complete", endpoint="complete_chore")
+def complete_chore_route(chore_id):
+    """AJAX endpoint to mark a chore as complete. Used by dashboard cards."""
     service_complete_chore(chore_id)
-    return ('', 204)
-
-
+    return ("", 204)

@@ -20,6 +20,7 @@ from config import get_settings
 
 
 def _bootstrap_logging() -> Logger:
+    """Initializes basic logging for the application."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
     return logging.getLogger("startup")
 
@@ -37,6 +38,7 @@ db.init_app(app)
 
 with app.app_context():  # pragma: no cover - startup side effects
     import models  # noqa: F401  # ensure models registered
+
     db.create_all()
     log.info("Database tables created")
 
@@ -45,6 +47,7 @@ if not settings:  # pragma: no cover safety check
 
 # Allow skipping routes when running maintenance scripts (seed/migrations)
 import os as _os
+
 if not _os.environ.get("SKIP_ROUTES"):
     import routes  # noqa: F401
 

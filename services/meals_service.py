@@ -15,6 +15,7 @@ Responsibilities:
   raw list order from calendar API) to provide an intuitive override
   mechanism.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,25 +30,31 @@ logger = logging.getLogger("meals_service")
 
 @dataclass(slots=True)
 class MealDTO:
+    """Data Transfer Object for a meal, providing a stable, backend-agnostic interface."""
+
     date: date
     title: str
     notes: Optional[str] = None  # reserved for future expansion
 
 
 def _to_date(val) -> Optional[date]:
+    """Safely converts a string, date, or datetime into a date object."""
     if isinstance(val, date) and not isinstance(val, datetime):
         return val
     if isinstance(val, datetime):
         return val.date()
     if isinstance(val, str):
         try:
+            # Safely parse the date part of an ISO string
             return date.fromisoformat(val[:10])
-        except ValueError:
+        except (ValueError, TypeError):
             return None
     return None
 
 
-def fetch_meals(*, start: Optional[date] = None, end: Optional[date] = None) -> List[MealDTO]:
+def fetch_meals(
+    *, start: Optional[date] = None, end: Optional[date] = None
+) -> List[MealDTO]:
     """Return normalized meal entries.
 
     Parameters
@@ -57,14 +64,20 @@ def fetch_meals(*, start: Optional[date] = None, end: Optional[date] = None) -> 
         returned by the underlying calendar mapping are included.
     """
     raw = calendar_service.get_meals()
+    # Handle potential errors from the underlying calendar service
     if isinstance(raw, dict) and "error" in raw:
-        logger.warning("fetch_meals: underlying calendar_service error: %s", raw["error"])
+        logger.warning(
+            "fetch_meals: underlying calendar_service error: %s", raw["error"]
+        )
         return []
+
     meals: List[MealDTO] = []
+    # First pass: transform raw data into a list of MealDTOs and apply date filters
     for iso_day, titles in raw.items():
         d = _to_date(iso_day)
         if not d:
-            continue
+            continue  # Skip entries with invalid dates
+        # Apply start and end date filters if provided
         if start and d < start:
             continue
         if end and d > end:
@@ -72,18 +85,24 @@ def fetch_meals(*, start: Optional[date] = None, end: Optional[date] = None) -> 
         for t in titles:
             meals.append(MealDTO(date=d, title=t))
 
-    # De-dup rule: keep last occurrence of duplicate (date,title)
+    # Second pass: de-duplicate meals. The rule is to keep the last occurrence
+    # of a meal with the same date and title. This allows for easy overrides.
     dedup: dict[tuple[date, str], MealDTO] = {}
     for m in meals:
         dedup[(m.date, m.title)] = m
 
+    # Sort the de-duplicated meals by date, then by title.
     ordered = sorted(dedup.values(), key=lambda m: (m.date, m.title.lower()))
     logger.info(
-        "fetch_meals: raw_events=%d unique=%d window=%s..%s", len(meals), len(ordered), start, end
+        "fetch_meals: raw_events=%d unique=%d window=%s..%s",
+        len(meals),
+        len(ordered),
+        start,
+        end,
     )
     # Provide a compact per-day listing for observability (INFO so it surfaces in basic logs)
     if ordered:
-        # Group by date preserving order
+        # Group by date while preserving order for logging
         by_date: dict[date, list[str]] = {}
         for m in ordered:
             by_date.setdefault(m.date, []).append(m.title)
