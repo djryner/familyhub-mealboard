@@ -57,7 +57,7 @@
       <div class="col-md-6">
         <label class="form-label">Recurrence</label>
         <select name="recurrence" class="form-select">
-          {% for opt in ["Once","Daily","School Days","Weekends","Once per week"] %}
+          {% for opt in ["Once","Daily","School Days","Weekends","Sunday to Thursday","Once per week"] %}
           <option value="{{ opt }}" {% if opt=="Once" %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
         </select>

@@ -209,6 +209,9 @@ def create_chore():
         elif recurrence == "Weekends":
             due_date = next_in_set_on_or_after(today, {5,6})
             rrule = ["RRULE:FREQ=WEEKLY;BYDAY=SA,SU"]
+        elif recurrence == "Sunday to Thursday":
+            due_date = next_in_set_on_or_after(today, {6,0,1,2,3})
+            rrule = ["RRULE:FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH"]
         else:
             return jsonify(error="Invalid recurrence"), 400
 
