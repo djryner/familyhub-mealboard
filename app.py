@@ -36,6 +36,20 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 300, "pool_pre_ping":
 
 db.init_app(app)
 
+
+from flask import url_for  # placed after app creation
+
+
+def safe_url_for(endpoint: str, **values) -> str:
+    """Return URL for endpoint if available, else '#' to avoid build errors."""
+    try:
+        return url_for(endpoint, **values)
+    except Exception:  # pragma: no cover - best effort safety
+        return "#"
+
+
+app.jinja_env.globals.setdefault("safe_url_for", safe_url_for)
+
 with app.app_context():  # pragma: no cover - startup side effects
     import models  # noqa: F401  # ensure models registered
 
@@ -50,6 +64,8 @@ import os as _os
 
 if not _os.environ.get("SKIP_ROUTES"):
     import routes  # noqa: F401
+    from rewards import bp as rewards_bp
+    app.register_blueprint(rewards_bp, url_prefix="/rewards")
 
 if __name__ == "__main__":  # pragma: no cover
     app.run(host="0.0.0.0", port=5050, debug=True)

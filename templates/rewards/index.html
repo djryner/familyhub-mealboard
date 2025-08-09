@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Rewards{% endblock %}
+{% block content %}
+<div class="section-header"><h1>Rewards</h1></div>
+
+<style>
+.rewards-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.kid-card { border-radius: 16px; padding: 12px; background: var(--panel, #171a21); border: 1px solid rgba(255,255,255,.08); }
+.kid-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; }
+.avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#0f1115; }
+.balance { background: rgba(255,255,255,.08); border-radius: 999px; padding: 4px 10px; font-weight:600; }
+.reward-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:12px; background: rgba(255,255,255,.05); margin-bottom:8px; }
+.redeem { min-width: 160px; }
+</style>
+
+<div class="rewards-grid">
+  {% for u in users %}
+  {% set bal = balances[u.name] %}
+  <div class="kid-card">
+    <div class="kid-head">
+      <div class="d-flex align-items-center gap-2">
+        <div class="avatar" style="background: {{ u.color or '#7dd3fc' }};">{{ (u.avatar or u.name[0:1]).upper() }}</div>
+        <div class="fw-semibold">{{ u.name }}</div>
+      </div>
+      <div class="balance">⭐ {{ bal }}</div>
+    </div>
+
+    {% for r in rewards %}
+      <div class="reward-row">
+        <div class="d-flex align-items-center gap-2">
+          <span style="font-size:1.2rem">{{ r.emoji or '🎁' }}</span>
+          <div class="fw-semibold">{{ r.title }}</div>
+        </div>
+        <button class="btn btn-success redeem"
+                data-user="{{ u.name }}" data-reward="{{ r.id }}"
+                {% if bal < r.cost_points %}disabled{% endif %}>
+          Redeem • {{ r.cost_points }}
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('.redeem'); if(!btn) return;
+  const user = btn.dataset.user, rid = btn.dataset.reward;
+  btn.disabled = true;
+  try{
+    const r = await fetch('{{ url_for("rewards.redeem_reward") }}', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({user: user, reward_id: Number(rid)})
+    });
+    if(!r.ok){ const j=await r.json().catch(()=>({})); alert(j.error || 'Redemption failed'); btn.disabled=false; return; }
+    // naive UI update: decrement number on the pill
+    const pill = btn.closest('.kid-card').querySelector('.balance');
+    const cur = Number(pill.textContent.replace(/\D/g,'')) || 0;
+    const cost = Number(btn.textContent.replace(/\D/g,'')) || 0;
+    pill.textContent = `⭐ ${Math.max(cur - cost,0)}`;
+  }catch(err){ console.error(err); btn.disabled=false; }
+});
+</script>
+{% endblock %}

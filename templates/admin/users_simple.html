@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1 class="mb-4">Users</h1>
+<div class="row mb-4">
+  <div class="col-md-6">
+    <form method="POST" action="{{ url_for('create_user') }}" class="mb-3">
+      <div class="mb-2">
+        <input type="text" name="name" class="form-control" placeholder="Name" required>
+      </div>
+      <div class="mb-2">
+        <input type="text" name="color" class="form-control" placeholder="#color">
+      </div>
+      <div class="mb-2">
+        <input type="text" name="avatar" class="form-control" placeholder="Avatar">
+      </div>
+      <button type="submit" class="btn btn-primary">Add User</button>
+    </form>
+  </div>
+</div>
+<table class="table table-striped">
+  <thead><tr><th>Name</th><th>Color</th><th>Avatar</th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr><td>{{ u.name }}</td><td>{{ u.color }}</td><td>{{ u.avatar }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
