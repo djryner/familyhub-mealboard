@@ -1,14 +1,23 @@
 from flask import session, render_template, request, redirect, url_for, flash, jsonify
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 from app import app, db
 #from replit_auth import require_login, require_admin, make_replit_blueprint
 from flask_login import current_user
 #from models import Chore, MealPlan, Notification, User
 from calendar_api import get_meals
-from datetime import datetime, date, timezone
-from flask import render_template, session
 from tasks_api import get_google_tasks, build_google_service, get_or_create_task_list
 from models import ChoreTemplate
+
+
+def to_date(x):
+    if isinstance(x, date) and not isinstance(x, datetime):
+        return x
+    if isinstance(x, datetime):
+        return x.date()
+    if isinstance(x, str):
+        s = x[:10]
+        return date.fromisoformat(s)
+    return None
 
 
 #app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
@@ -41,29 +50,35 @@ def index():
     # Limit to 5 upcoming chores
     recent_chores = pending_chores[:5]
 
-    # Get today's date in ISO format
-    today = date.today()
-    today_str = today.isoformat()
-
-    # Fetch and filter meals
+    # Normalize and filter meals for the next week
     meals_data = get_meals()
-    upcoming_meals = []
-
+    all_meals = []
     if "error" not in meals_data:
-        for date_str in sorted(meals_data.keys()):
-            if date_str >= today_str:
-                for meal in meals_data[date_str]:
-                    upcoming_meals.append({"date": date_str, "meal": meal})
-            if len(upcoming_meals) >= 5:
-                break
-        upcoming_meals = upcoming_meals[:5]
+        for date_str, meal_list in meals_data.items():
+            for meal in meal_list:
+                all_meals.append({"date": date_str, "meal": meal})
 
+    today = date.today()
+    end = today + timedelta(days=6)
+
+    meals_norm = []
+    for m in all_meals or []:
+        d = to_date(m.get('date') if isinstance(m, dict) else getattr(m, 'date', None))
+        if not d:
+            continue
+        meal_name = m.get('meal') if isinstance(m, dict) else getattr(m, 'meal', '')
+        meals_norm.append({'meal': meal_name, 'date': d})
+
+    meals_week = sorted(
+        [m for m in meals_norm if today <= m['date'] <= end],
+        key=lambda m: m['date']
+    )
 
     return render_template(
         'index.html',
         chores=recent_chores,
-        meals=upcoming_meals,
-        today=today_str
+        meals=meals_week,
+        today=today
     )
 
 @app.route('/chores')

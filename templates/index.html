@@ -40,46 +40,27 @@
     <h1>Family Dashboard</h1>
 </div>
 
-{# Normalize "today" to an ISO yyyy-mm-dd string for comparisons #}
-{% set today_iso = today if today is string else (today.strftime('%Y-%m-%d') if today else '') %}
+{% set today_iso = today.strftime('%Y-%m-%d') %}
 
 <div class="card mb-4">
-    <div class="card-header">
-        <h4 class="mb-0">Meals This Week</h4>
-    </div>
-    <div class="card-body">
-        {% if meals %}
-        <div class="meal-row">
-            {% for meal in meals[:7] %}
-                {# get ISO string for comparison; date/datetime uses strftime, strings slice first 10 #}
-                {% if meal.date %}
-                    {% if meal.date.strftime is defined %}
-                        {% set meal_iso = meal.date.strftime('%Y-%m-%d') %}
-                        {% set meal_dow = meal.date.strftime('%a') %}
-                        {% set meal_mmdd = meal.date.strftime('%m/%d') %}
-                    {% else %}
-                        {% set meal_iso = meal.date[:10] %}
-                        {% set meal_dow = '' %}
-                        {% set meal_mmdd = meal.date %}
-                    {% endif %}
-                {% else %}
-                    {% set meal_iso = '' %}
-                    {% set meal_dow = '' %}
-                    {% set meal_mmdd = '' %}
-                {% endif %}
-
-                <div class="meal-card {% if meal_iso == today_iso %}today{% endif %}">
-                    <div class="text-muted small">
-                        {{ meal_dow }} {% if meal_mmdd %}{{ meal_mmdd }}{% endif %}
-                    </div>
-                    <div>{{ meal.meal }}</div>
-                </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-muted mb-0">No meals planned yet.</p>
-        {% endif %}
-    </div>
+  <div class="card-header"><h4 class="mb-0">Meals This Week</h4></div>
+  <div class="card-body">
+    {% if meals %}
+      <div class="meal-row">
+        {% for meal in meals[:7] %}
+          {% set is_today = (meal.date == today) %}
+          <div class="meal-card {% if is_today %}today{% endif %}">
+            <div class="text-muted small">
+              {{ meal.date.strftime('%a') }} {{ meal.date.strftime('%m/%d') }}
+            </div>
+            <div>{{ meal.meal }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted mb-0">No meals planned yet.</p>
+    {% endif %}
+  </div>
 </div>
 
 <div class="card">
