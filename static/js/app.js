@@ -16,6 +16,7 @@ const sections = ["dashboard", "chores", "meals", "notifications"];
  */
 document.addEventListener("DOMContentLoaded", function () {
   initializeApp();
+  startLiveClock();
 });
 
 /**
@@ -37,6 +38,32 @@ function initializeApp() {
   addGlobalEventListeners();
 
   console.log("Family Hub initialized successfully with touch optimizations!");
+}
+
+/** Live clock (dashboard only) **/
+function startLiveClock() {
+  const el = document.getElementById("liveClock");
+  if (!el) return; // only on dashboard
+  function fmt() {
+    const now = new Date();
+    // Format: Sat Aug 9 11:53 AM
+    const dow = now.toLocaleString(undefined, { weekday: 'short' });
+    const mon = now.toLocaleString(undefined, { month: 'short' });
+    const day = now.getDate();
+    let hours = now.getHours();
+    const mins = now.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    el.textContent = `${dow} ${mon} ${day} ${hours}:${mins} ${ampm}`;
+    el.setAttribute('aria-label', el.textContent);
+  }
+  fmt();
+  // Update at the next minute boundary then every minute
+  const msToNextMinute = 60000 - (Date.now() % 60000) + 50;
+  setTimeout(() => {
+    fmt();
+    setInterval(fmt, 60000);
+  }, msToNextMinute);
 }
 
 /**

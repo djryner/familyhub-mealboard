@@ -39,11 +39,39 @@
     /* So muted meta line is still readable on dark background */
     .meal-card .text-muted { color: #9ca3af !important; }
 
+    /* Live clock positioning (dashboard only) */
+    .section-header { position: relative; }
+    .live-clock {
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: .5px;
+        padding: .25rem .6rem;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: .5rem;
+        background: rgba(0,0,0,0.35);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        min-width: 140px;
+        text-align: center;
+        color: #f8f9fa; /* Ensure readable contrast */
+    }
+
     .chore-card {
         border: 1px solid #dee2e6;
         border-radius: .5rem;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: .55rem .75rem;
+        margin-bottom: .6rem;
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+    }
+
+    .chore-card .chore-info {
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .chore-card.completed {
@@ -51,24 +79,52 @@
         text-decoration: line-through;
     }
 
+    /* Compact complete button */
+    .chore-complete-btn {
+        flex: 0 0 auto;
+        width: auto;
+        margin: 0;
+        padding: .25rem .55rem;
+        font-size: .7rem;
+        line-height: 1.1;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .chore-complete-btn:disabled {
+        opacity: .85;
+    }
+
+    /* Remove old full-width style (override) */
     .btn-complete {
-        width: 100%;
-        margin-top: .75rem;
+        width: auto !important;
+        margin-top: 0 !important;
     }
 </style>
 
 <div class="section-header">
     <h1>Family Dashboard</h1>
+    <div id="liveClock" class="live-clock" aria-label="Current date and time"></div>
 </div>
-
-{# Accept either a date/datetime object or a pre-formatted ISO string #}
-{% if today is string %}
-    {% set today_iso = today %}
-{% elif today.strftime is defined %}
-    {% set today_iso = today.strftime('%Y-%m-%d') %}
-{% else %}
-    {% set today_iso = today|string %}
-{% endif %}
+<script>
+    // Live clock (runs only on dashboard)
+    (function startLiveClock() {
+        const el = document.getElementById('liveClock');
+        if (!el) return;
+        function fmt() {
+            const now = new Date();
+            // Example: Sat Aug 9 11:53 AM
+            const opts = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+            // Remove the comma some locales insert after weekday
+            let text = now.toLocaleString(undefined, opts).replace(',', '');
+            el.textContent = text;
+            el.setAttribute('aria-label', text);
+            // Schedule next update exactly at next minute boundary
+            const msToNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+            setTimeout(fmt, msToNextMinute);
+        }
+        fmt();
+    })();
+</script>
 
 <div class="card mb-4">
     <div class="card-header">
@@ -95,31 +151,26 @@
         <h4 class="mb-0">Today's Chores</h4>
     </div>
     <div class="card-body">
-        {% set any_today = namespace(value=false) %}
-        {% for chore in chores %}
-        {% if chore.due_date %}
-        {% if chore.due_date.strftime is defined %}
-        {% set due_iso = chore.due_date.strftime('%Y-%m-%d') %}
-        {% else %}
-        {% set due_iso = chore.due_date[:10] %}
-        {% endif %}
-        {% else %}
-        {% set due_iso = '' %}
-        {% endif %}
-
-        {% if due_iso == today_iso %}
-        {% set any_today.value = true %}
-        <div class="chore-card {% if chore.completed %}completed{% endif %}" id="chore-{{ chore.id }}">
-            <div class="fw-bold">{{ chore.title }}</div>
-            <div class="text-muted small">
-                {% if chore.assigned_to %}{{ chore.assigned_to }}{% endif %}
-                {% if chore.priority %}{% if chore.assigned_to %} • {% endif %}{{ chore.priority|capitalize }}{% endif
-                %}
+    {% set any_today = namespace(value=false) %}
+    {% for chore in chores %}
+        {% if chore.due_date and chore.due_date == today %}
+            {% set any_today.value = true %}
+            <div class="chore-card {% if chore.completed %}completed{% endif %}" id="chore-{{ chore.id }}">
+                <div class="chore-info">
+                    <div class="fw-bold text-truncate">{{ chore.title }}</div>
+                    <div class="text-muted small">
+                        {% if chore.assigned_to %}{{ chore.assigned_to }}{% endif %}
+                        <!-- {% if chore.priority %}{% if chore.assigned_to %} • {% endif %}{{ chore.priority|capitalize }}{% endif %} -->
+                    </div>
+                </div>
+                <button
+                    class="btn btn-sm btn-outline-success chore-complete-btn btn-complete"
+                    data-complete-url="{{ url_for('complete_chore', chore_id=chore.id) }}"
+                    {% if chore.completed %}disabled{% endif %}
+                    aria-label="Mark {{ chore.title }} complete">
+                    {% if chore.completed %}Done{% else %}Complete{% endif %}
+                </button>
             </div>
-            <button class="btn btn-success btn-complete" data-complete-url="{{ url_for('complete_chore', chore_id=chore.id) }}" {% if chore.completed %}disabled{% endif %}>
-                {{ 'Completed' if chore.completed else 'Mark Complete' }}
-            </button>
-        </div>
         {% endif %}
         {% endfor %}
         {% if not any_today.value %}
