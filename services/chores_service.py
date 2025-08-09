@@ -58,7 +58,10 @@ def _google_fetch() -> List[ChoreDTO]:
     logger.info("_google_fetch: retrieved %d raw tasks", len(tasks))
 
     # Fetch all metadata in one go for efficiency
-    meta_map = {m.task_id: m for m in ChoreMetadata.query.all()}
+    try:
+        meta_map = {m.task_id: m for m in ChoreMetadata.query.all()}
+    except Exception:  # pragma: no cover - occurs when DB not initialized
+        meta_map = {}
 
     out: List[ChoreDTO] = []
     for t in tasks:

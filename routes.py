@@ -21,6 +21,8 @@ from flask import (
     flash,
     jsonify,
 )
+from sqlalchemy import text
+
 from app import app, db
 from calendar_api import get_meals  # legacy JSON endpoint still uses mapping
 from tasks_api import build_google_service, get_or_create_task_list
@@ -30,6 +32,8 @@ from services.chores_service import (
     ChoreDTO,
 )
 from services.meals_service import fetch_meals, MealDTO
+from services import points_service
+from config import get_settings
 from models import ChoreTemplate
 
 logger = logging.getLogger("dashboard")
@@ -60,6 +64,8 @@ def index():
     """
     logger.info("index: start")
 
+    settings = get_settings()
+
     # Fetch up to 5 upcoming (incomplete) chores
     recent_chores: list[ChoreDTO] = fetch_chores(include_completed=False, limit=5)
     logger.info("index: loaded %d chores", len(recent_chores))
@@ -78,7 +84,24 @@ def index():
     for m in meals:  # pragma: no cover (log only)
         logger.info("index: meal %s %s", m.date.isoformat(), m.title)
 
-    return render_template("index.html", chores=recent_chores, meals=meals, today=today)
+    leaderboard = []
+    if settings.points_enabled:
+        start_week = today - timedelta(days=today.weekday())
+        end_week = start_week + timedelta(days=6)
+        try:
+            with db.engine.begin() as conn:
+                leaderboard = points_service.leaderboard_week(conn, start_week, end_week)
+        except Exception:  # pragma: no cover - points tables may be missing
+            leaderboard = []
+
+    return render_template(
+        "index.html",
+        chores=recent_chores,
+        meals=meals,
+        today=today,
+        leaderboard=leaderboard,
+        points_enabled=settings.points_enabled,
+    )
 
 
 @app.route("/chores")
@@ -189,5 +212,51 @@ def create_chore():
 @app.post("/chores/<string:chore_id>/complete", endpoint="complete_chore")
 def complete_chore_route(chore_id):
     """AJAX endpoint to mark a chore as complete. Used by dashboard cards."""
+    payload = request.get_json(silent=True) or {}
     service_complete_chore(chore_id)
+
+    settings = get_settings()
+    fallback = settings.points_default if getattr(settings, "points_default", None) is not None else 1
+
+    with db.engine.begin() as conn:
+        user = payload.get("assigned_to")
+        if not user:
+            meta = conn.execute(text("SELECT assigned_to FROM chore_metadata WHERE task_id=:id"), {"id": chore_id}).fetchone()
+            user = meta[0] if meta and meta[0] else None
+        pts = points_service.get_chore_points(conn, chore_id, fallback=fallback)
+        if user:
+            points_service.grant_points_for_completion(conn, user=user, task_id=chore_id, points=pts)
+
     return ("", 204)
+
+
+@app.post('/admin/chores/<string:task_id>/points', endpoint='admin_set_points')
+def admin_set_points(task_id):
+    pts = int(request.form.get('points', 1))
+    with db.engine.begin() as conn:
+        points_service.set_chore_points(conn, task_id, pts)
+    return ('', 204)
+
+
+@app.get('/admin/rewards', endpoint='rewards_page')
+def rewards_page():
+    rows = db.session.execute(text("SELECT id, title, cost_points, active FROM rewards ORDER BY active DESC, cost_points")).fetchall()
+    return render_template('admin/rewards.html', rewards=rows)
+
+
+@app.post('/admin/rewards', endpoint='create_reward')
+def create_reward():
+    t = request.form['title']
+    c = int(request.form['cost_points'])
+    db.session.execute(text("INSERT INTO rewards(title, cost_points) VALUES (:t,:c)"), {"t": t, "c": c})
+    db.session.commit()
+    return redirect(url_for('rewards_page'))
+
+
+@app.post('/admin/redeem', endpoint='redeem_reward')
+def redeem_reward():
+    user = request.form['user']
+    rid = int(request.form['reward_id'])
+    with db.engine.begin() as conn:
+        points_service.redeem(conn, user=user, reward_id=rid)
+    return redirect(url_for('rewards_page'))
