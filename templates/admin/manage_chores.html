@@ -20,74 +20,58 @@
 </div>
 
 {% if chores %}
-    <div class="row">
-        <div class="col-12">
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Assigned To</th>
-                            <th>Due Date</th>
-                            <th>Priority</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for chore in chores %}
-                            <tr class="{{ 'table-success' if chore.completed else '' }}">
-                                <td>
-                                    <strong>{{ chore.title }}</strong>
-                                    {% if chore.description %}
-                                        <br><small class="text-muted">{{ chore.description[:50] }}{% if chore.description|length > 50 %}...{% endif %}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{{ chore.assigned_to or '-' }}</td>
-                                <td>{{ chore.due_date.strftime('%m/%d/%Y') if chore.due_date else '-' }}</td>
-                                <td>
-                                    <span class="badge bg-{{ 'danger' if chore.priority == 'high' else 'warning' if chore.priority == 'medium' else 'secondary' }}">
-                                        {{ chore.priority.title() }}
-                                    </span>
-                                </td>
-                                <td>{{ chore.category.title() if chore.category else '-' }}</td>
-                                <td>
-                                    <span class="badge bg-{{ 'success' if chore.completed else 'warning' }}">
-                                        {{ 'Completed' if chore.completed else 'Pending' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ url_for('toggle_chore', chore_id=chore.id) }}" 
-                                           class="btn btn-outline-{{ 'secondary' if chore.completed else 'success' }}"
-                                           title="{{ 'Mark Incomplete' if chore.completed else 'Mark Complete' }}">
-                                            <i class="fas fa-{{ 'undo' if chore.completed else 'check' }}"></i>
-                                        </a>
-                                        <form method="POST" action="{{ url_for('admin_delete_chore', chore_id=chore.id) }}" class="d-inline"
-                                              onsubmit="return confirm('Are you sure you want to delete this chore?')">
-                                            <button type="submit" class="btn btn-outline-danger" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Assigned</th>
+                <th>Due</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th style="width:110px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for chore in chores %}
+            <tr class="{{ 'table-success' if chore.completed else '' }}">
+                <td>
+                    <div class="fw-semibold">{{ chore.title }}</div>
+                    {% if chore.notes %}<div class="small text-muted">{{ chore.notes.split('\n')[0] }}</div>{% endif %}
+                </td>
+                <td>{{ chore.assigned_to or '-' }}</td>
+                <td>{{ chore.due_date.strftime('%m/%d/%Y') if chore.due_date else '-' }}</td>
+                <td>
+                    <span class="badge bg-{% if chore.priority=='high' %}danger{% elif chore.priority=='medium' %}warning{% else %}secondary{% endif %}">
+                        {{ chore.priority.title() }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-{{ 'success' if chore.completed else 'warning' }}">{{ 'Completed' if chore.completed else 'Pending' }}</span>
+                </td>
+                <td>
+                    {% if not chore.completed %}
+                    <button class="btn btn-sm btn-success" data-complete-chore="{{ chore.id }}" title="Mark Complete">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% else %}
-    <div class="text-center py-5">
-        <i class="fas fa-tasks fa-4x text-muted mb-4"></i>
-        <h3>No chores created yet</h3>
-        <p class="text-muted">Create your first family chore to get started.</p>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChoreModal">
-            <i class="fas fa-plus me-1"></i>Add First Chore
-        </button>
-    </div>
+<div class="text-center py-5">
+    <i class="fas fa-tasks fa-4x text-muted mb-4"></i>
+    <h3>No chores created yet</h3>
+    <p class="text-muted">Create your first family chore to get started.</p>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChoreModal">
+        <i class="fas fa-plus me-1"></i>Add First Chore
+    </button>
+</div>
 {% endif %}
 
 <!-- Add Chore Modal -->
@@ -115,8 +99,8 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Optional details"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -124,21 +108,9 @@
                             <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="Family member name">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="category" class="form-label">Category</label>
-                            <select class="form-select" id="category" name="category">
-                                <option value="">Select category</option>
-                                <option value="cleaning">Cleaning</option>
-                                <option value="cooking">Cooking</option>
-                                <option value="laundry">Laundry</option>
-                                <option value="maintenance">Maintenance</option>
-                                <option value="yard">Yard Work</option>
-                                <option value="other">Other</option>
-                            </select>
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date">
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="due_date" class="form-label">Due Date</label>
-                        <input type="date" class="form-control" id="due_date" name="due_date">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -149,4 +121,33 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-complete-chore]');
+    if (!btn) return;
+    const id = btn.getAttribute('data-complete-chore');
+    btn.disabled = true;
+    try {
+        const res = await fetch(`/chores/${id}/complete`, { method: 'POST' });
+        if (res.status === 204) {
+            const row = btn.closest('tr');
+            row.classList.add('table-success');
+            const statusBadge = row.querySelector('.badge.bg-warning');
+            if (statusBadge) {
+                statusBadge.classList.remove('bg-warning');
+                statusBadge.classList.add('bg-success');
+                statusBadge.textContent = 'Completed';
+            }
+            btn.remove();
+        } else {
+            btn.disabled = false;
+            alert('Failed to complete chore');
+        }
+    } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        alert('Network error');
+    }
+});
+</script>
 {% endblock %}

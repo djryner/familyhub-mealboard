@@ -61,11 +61,10 @@
                         </div>
                     </div>
                     <div class="card-footer text-center">
-                        <form action="{{ url_for('toggle_task', task_id=chore.id) }}" method="post">
-                            <button type="submit"
-                                class="btn btn-sm {{ 'btn-secondary' if chore.completed else 'btn-success' }}">
-                                <i class="fas fa-{{ 'undo' if chore.completed else 'check' }} me-1"></i>
-                                {{ 'Mark Incomplete' if chore.completed else 'Mark Complete' }}
+                        <form action="{{ url_for('complete_chore', chore_id=chore.id) }}" method="post">
+                            <button type="submit" class="btn btn-sm {{ 'btn-secondary' if chore.completed else 'btn-success' }}" {% if chore.completed %}disabled{% endif %}>
+                                <i class="fas fa-{{ 'check' if chore.completed else 'check' }} me-1"></i>
+                                {{ 'Completed' if chore.completed else 'Mark Complete' }}
                             </button>
                         </form>
                     </div>
