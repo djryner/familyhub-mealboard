@@ -40,23 +40,38 @@
     <h1>Family Dashboard</h1>
 </div>
 
+{# Normalize "today" to an ISO yyyy-mm-dd string for comparisons #}
+{% set today_iso = today if today is string else (today.strftime('%Y-%m-%d') if today else '') %}
+
 <div class="card mb-4">
     <div class="card-header">
         <h4 class="mb-0">Meals This Week</h4>
     </div>
     <div class="card-body">
         {% if meals %}
-        {% set today_str = today if today is string else today.strftime('%Y-%m-%d') %}
-        {% set dt = __import__('datetime').datetime %}
         <div class="meal-row">
             {% for meal in meals[:7] %}
-                {% set meal_dt = meal.date %}
-                {% if meal_dt is string %}
-                    {% set meal_dt = dt.strptime(meal_dt, '%Y-%m-%d') %}
+                {# get ISO string for comparison; date/datetime uses strftime, strings slice first 10 #}
+                {% if meal.date %}
+                    {% if meal.date.strftime is defined %}
+                        {% set meal_iso = meal.date.strftime('%Y-%m-%d') %}
+                        {% set meal_dow = meal.date.strftime('%a') %}
+                        {% set meal_mmdd = meal.date.strftime('%m/%d') %}
+                    {% else %}
+                        {% set meal_iso = meal.date[:10] %}
+                        {% set meal_dow = '' %}
+                        {% set meal_mmdd = meal.date %}
+                    {% endif %}
+                {% else %}
+                    {% set meal_iso = '' %}
+                    {% set meal_dow = '' %}
+                    {% set meal_mmdd = '' %}
                 {% endif %}
-                {% set meal_date_str = meal_dt.strftime('%Y-%m-%d') %}
-                <div class="meal-card {% if meal_date_str == today_str %}today{% endif %}">
-                    <div class="text-muted small">{{ meal_dt.strftime('%a') }} {{ meal_dt.strftime('%m/%d') }}</div>
+
+                <div class="meal-card {% if meal_iso == today_iso %}today{% endif %}">
+                    <div class="text-muted small">
+                        {{ meal_dow }} {% if meal_mmdd %}{{ meal_mmdd }}{% endif %}
+                    </div>
                     <div>{{ meal.meal }}</div>
                 </div>
             {% endfor %}
@@ -72,26 +87,37 @@
         <h4 class="mb-0">Today's Chores</h4>
     </div>
     <div class="card-body">
-        {% set today_str = today if today is string else today.strftime('%Y-%m-%d') %}
-        {% set found = namespace(value=false) %}
+        {% set any_today = namespace(value=false) %}
         {% for chore in chores %}
             {% if chore.due_date %}
-                {% set due_str = chore.due_date if chore.due_date is string else chore.due_date.strftime('%Y-%m-%d') %}
-                {% if due_str == today_str %}
-                    {% set found.value = true %}
-                    <div class="chore-card {% if chore.completed %}completed{% endif %}" id="chore-{{ chore.id }}">
-                        <div class="fw-bold">{{ chore.title }}</div>
-                        <div class="text-muted small">
-                            {% if chore.assigned_to %}{{ chore.assigned_to }} • {% endif %}{{ chore.priority.capitalize() }}
-                        </div>
-                        <button class="btn btn-success btn-complete" data-complete-url="{{ url_for('complete_chore', chore_id=chore.id) }}" {% if chore.completed %}disabled{% endif %}>
-                            {{ 'Completed' if chore.completed else 'Mark Complete' }}
-                        </button>
-                    </div>
+                {% if chore.due_date.strftime is defined %}
+                    {% set due_iso = chore.due_date.strftime('%Y-%m-%d') %}
+                {% else %}
+                    {% set due_iso = chore.due_date[:10] %}
                 {% endif %}
+            {% else %}
+                {% set due_iso = '' %}
+            {% endif %}
+
+            {% if due_iso == today_iso %}
+                {% set any_today.value = true %}
+                <div class="chore-card {% if chore.completed %}completed{% endif %}" id="chore-{{ chore.id }}">
+                    <div class="fw-bold">{{ chore.title }}</div>
+                    <div class="text-muted small">
+                        {% if chore.assigned_to %}{{ chore.assigned_to }}{% endif %}
+                        {% if chore.priority %}{% if chore.assigned_to %} • {% endif %}{{ chore.priority|capitalize }}{% endif %}
+                    </div>
+                    <button
+                        class="btn btn-success btn-complete"
+                        data-complete-url="{{ url_for('complete_chore', chore_id=chore.id) }}"
+                        {% if chore.completed %}disabled{% endif %}
+                    >
+                        {{ 'Completed' if chore.completed else 'Mark Complete' }}
+                    </button>
+                </div>
             {% endif %}
         {% endfor %}
-        {% if not found.value %}
+        {% if not any_today.value %}
             <p class="text-muted mb-0">No chores due today.</p>
         {% endif %}
     </div>
@@ -99,21 +125,27 @@
 
 <script>
 document.addEventListener('click', async function(e) {
-    if (e.target.classList.contains('btn-complete')) {
-        const btn = e.target;
-        if (btn.disabled) return;
-        const url = btn.dataset.completeUrl;
-        const card = btn.closest('.chore-card');
-        try {
-            const resp = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({completed: true})});
-            if (resp.ok) {
-                card.classList.add('completed');
-                btn.textContent = 'Completed';
-                btn.disabled = true;
-            }
-        } catch (err) {
-            console.error(err);
-        }
+    const btn = e.target.closest('.btn-complete');
+    if (!btn) return;
+
+    if (btn.disabled) return;
+    const url = btn.dataset.completeUrl;
+    const card = btn.closest('.chore-card');
+
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ completed: true })
+        });
+        if (!resp.ok) throw new Error('Request failed');
+
+        card.classList.add('completed');
+        btn.textContent = 'Completed';
+        btn.disabled = true;
+    } catch (err) {
+        console.error(err);
+        alert('Sorry, I couldn’t complete that chore. Try again.');
     }
 });
 </script>
