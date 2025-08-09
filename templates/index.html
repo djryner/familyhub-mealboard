@@ -45,7 +45,14 @@
     <h1>Family Dashboard</h1>
 </div>
 
-{% set today_iso = today.strftime('%Y-%m-%d') %}
+{# Accept either a date/datetime object or a pre-formatted ISO string #}
+{% if today is string %}
+    {% set today_iso = today %}
+{% elif today.strftime is defined %}
+    {% set today_iso = today.strftime('%Y-%m-%d') %}
+{% else %}
+    {% set today_iso = today|string %}
+{% endif %}
 
 <div class="card mb-4">
     <div class="card-header">
