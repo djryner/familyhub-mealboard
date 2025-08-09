@@ -43,10 +43,28 @@
       </select>
     </div>
 
-    <!-- Due date (tap-friendly) -->
-    <div class="mb-4">
-      <label for="due_date" class="form-label">Due Date</label>
-      <input type="date" name="due_date" id="due_date" class="form-control form-control-lg" required>
+    <!-- Day and recurrence -->
+    <div class="row g-2 mb-4">
+      <div class="col-md-6">
+        <label class="form-label">Day of the Week</label>
+        <select name="weekday" class="form-select">
+          <option value="">-- Select --</option>
+          {% for d in ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"] %}
+          <option value="{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Recurrence</label>
+        <select name="recurrence" class="form-select">
+          {% for opt in ["Once","Daily","School Days","Weekends","Once per week"] %}
+          <option value="{{ opt }}" {% if opt=="Once" %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">
+          School Days = Mon–Fri, Weekends = Sat–Sun. “Once per week” uses the selected weekday.
+        </div>
+      </div>
     </div>
 
     <!-- Points -->

@@ -181,6 +181,8 @@ def create_chore(
     priority: str = "low",
     notes: Optional[str] = None,
     points: int = 1,
+    recurrence: Optional[list[str]] = None,
+    due_rfc3339: Optional[str] = None,
 ) -> ChoreDTO:
     """Creates a new chore in the backend and stores metadata locally."""
     if CHORES_BACKEND != "google":
@@ -191,9 +193,13 @@ def create_chore(
     body: dict = {"title": title}
     if notes:
         body["notes"] = notes.strip()
-    if due_date:
+    if due_rfc3339:
+        body["due"] = due_rfc3339
+    elif due_date:
         # Google Tasks API requires due date in RFC 3339 format.
         body["due"] = due_date.isoformat() + "T00:00:00.000Z"
+    if recurrence:
+        body["recurrence"] = recurrence
 
     # Create the task and log the result
     task = svc.tasks().insert(tasklist=task_list_id, body=body).execute()
