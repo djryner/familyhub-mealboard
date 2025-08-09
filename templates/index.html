@@ -146,6 +146,22 @@
     </div>
 </div>
 
+{% if points_enabled %}
+<div class="card p-3 mb-4">
+  <h5 class="mb-3">This Week’s Leaderboard</h5>
+  <ol class="mb-0">
+    {% for row in leaderboard[:5] %}
+      <li class="d-flex justify-content-between">
+        <span>{{ row.user_name }}</span>
+        <strong>{{ row.pts }}</strong>
+      </li>
+    {% else %}
+      <div class="text-muted">No points yet—get started!</div>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
 <div class="card">
     <div class="card-header">
         <h4 class="mb-0">Today's Chores</h4>

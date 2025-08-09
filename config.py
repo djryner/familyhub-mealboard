@@ -27,6 +27,9 @@ class Settings:
     calendar_id: str | None = os.getenv("FAMILYHUB_CALENDAR_ID")
     # Path to the Google service account credentials file
     google_credentials_path: str | None = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    # Points / rewards feature flags
+    points_enabled: bool = os.getenv("POINTS_ENABLED", "true").lower() == "true"
+    points_default: int = int(os.getenv("POINTS_DEFAULT", "1"))
 
 
 def get_settings() -> Settings:

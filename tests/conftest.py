@@ -7,6 +7,9 @@ application modules (e.g., from `services`, `models`) correctly.
 
 import sys
 from pathlib import Path
+import os
+
+os.environ.setdefault("SKIP_ROUTES", "1")
 
 # Add the project root directory to the Python path to resolve imports
 ROOT = Path(__file__).resolve().parent.parent

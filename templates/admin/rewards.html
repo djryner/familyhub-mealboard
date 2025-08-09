@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Rewards{% endblock %}
+{% block content %}
+<h1 class="mb-4">Rewards</h1>
+<div class="row mb-4">
+  <div class="col-md-6">
+    <form method="POST" action="{{ url_for('create_reward') }}" class="mb-3">
+      <div class="mb-2">
+        <input type="text" name="title" class="form-control" placeholder="Title" required>
+      </div>
+      <div class="mb-2">
+        <input type="number" name="cost_points" class="form-control" placeholder="Cost" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Add Reward</button>
+    </form>
+  </div>
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr><th>Title</th><th>Cost</th><th>Active</th></tr>
+  </thead>
+  <tbody>
+  {% for r in rewards %}
+    <tr>
+      <td>{{ r.title }}</td>
+      <td>{{ r.cost_points }}</td>
+      <td>{{ 'Yes' if r.active else 'No' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<hr>
+<h2>Redeem</h2>
+<form method="POST" action="{{ url_for('redeem_reward') }}" class="row g-2">
+  <div class="col-md-4">
+    <input type="text" name="user" class="form-control" placeholder="User" required>
+  </div>
+  <div class="col-md-4">
+    <select name="reward_id" class="form-select">
+      {% for r in rewards if r.active %}
+      <option value="{{ r.id }}">{{ r.title }} ({{ r.cost_points }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <button type="submit" class="btn btn-success">Redeem</button>
+  </div>
+</form>
+{% endblock %}
