@@ -45,8 +45,7 @@
     <h1>Family Dashboard</h1>
 </div>
 
-{# Normalize "today" to an ISO yyyy-mm-dd string for comparisons #}
-{% set today_iso = today if today is string else (today.strftime('%Y-%m-%d') if today else '') %}
+{% set today_iso = today.strftime('%Y-%m-%d') %}
 
 <div class="card mb-4">
     <div class="card-header">

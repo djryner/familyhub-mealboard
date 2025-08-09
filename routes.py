@@ -57,8 +57,7 @@ def index():  # noqa: D401
 
     # Fetch and filter meals
     meals_data = get_meals()
-    upcoming_meals = []
-
+    all_meals = []
     if "error" not in meals_data:
         for date_str in sorted(meals_data.keys()):
             if date_str >= today_str:
