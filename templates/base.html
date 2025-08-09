@@ -29,6 +29,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {% if _path.startswith('/rewards') %}active{% endif %}" href="{{ safe_url_for('rewards.rewards_home') }}">
+                    <i class="fas fa-gift"></i>
+                    <span>Rewards</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {% if _path.startswith('/meal-plans') %}active{% endif %}" href="{{ url_for('meal_plans') }}" data-section="meals">
                     <i class="fas fa-utensils"></i>
                     <span>Meal Plans</span>

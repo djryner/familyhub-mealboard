@@ -37,11 +37,9 @@
       <label for="assigned_to" class="form-label">Assign To</label>
       <select name="assigned_to" id="assigned_to" class="form-select form-select-lg" required>
         <option value="">— Choose family member —</option>
-        <option value="Austin">Austin</option>
-        <option value="Addy">Addy</option>
-        <option value="Alexandria">Alexandria</option>
-        <option value="Doug">Doug</option>
-        <option value="Cate">Cate</option>
+        {% for u in users %}
+          <option value="{{ u.name }}">{{ u.name }}</option>
+        {% endfor %}
       </select>
     </div>
 

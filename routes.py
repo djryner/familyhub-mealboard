@@ -209,7 +209,9 @@ def create_chore():
         .order_by(ChoreTemplate.category.asc())
         .all()
     ]
-    return render_template("create_chore.html", categories=categories)
+    with db.engine.begin() as conn:
+        users = points_service.list_users(conn)
+    return render_template("create_chore.html", categories=categories, users=users)
 
 
 @app.post("/chores/<string:chore_id>/complete", endpoint="complete_chore")
@@ -263,3 +265,24 @@ def redeem_reward():
     with db.engine.begin() as conn:
         points_service.redeem(conn, user=user, reward_id=rid)
     return redirect(url_for('rewards_page'))
+
+
+@app.get('/admin/users', endpoint='admin_users')
+def admin_users():
+    rows = db.session.execute(
+        text('SELECT id, name, color, avatar FROM users ORDER BY name')
+    ).fetchall()
+    return render_template('admin/users_simple.html', users=rows)
+
+
+@app.post('/admin/users', endpoint='create_user')
+def create_user():
+    name = request.form['name']
+    color = request.form.get('color')
+    avatar = request.form.get('avatar')
+    db.session.execute(
+        text('INSERT INTO users(name, color, avatar) VALUES (:n,:c,:a)'),
+        {'n': name, 'c': color, 'a': avatar},
+    )
+    db.session.commit()
+    return redirect(url_for('admin_users'))

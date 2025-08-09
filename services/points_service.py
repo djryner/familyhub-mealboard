@@ -12,6 +12,37 @@ def _to_date(x):
     return None
 
 
+# ---------------------------------------------------------------------------
+# Helpers for the rewards feature
+# ---------------------------------------------------------------------------
+
+def user_balance(conn, user: str) -> int:
+    """Return the current points balance for a user."""
+    return int(
+        conn.execute(
+            text("SELECT COALESCE(SUM(points),0) FROM points_ledger WHERE user_name=:u"),
+            {"u": user},
+        ).scalar()
+        or 0
+    )
+
+
+def list_users(conn):
+    """List all users in alphabetical order."""
+    return conn.execute(
+        text("SELECT id, name, color, avatar FROM users ORDER BY name")
+    ).fetchall()
+
+
+def list_rewards(conn, active_only: bool = True):
+    """List rewards ordered by cost then title."""
+    sql = "SELECT id, title, cost_points, emoji, active FROM rewards"
+    if active_only:
+        sql += " WHERE active=1"
+    sql += " ORDER BY cost_points, title"
+    return conn.execute(text(sql)).fetchall()
+
+
 def get_chore_points(conn, task_id: str, fallback: int = 1) -> int:
     row = conn.execute(text("SELECT points FROM chore_metadata WHERE task_id=:id"), {"id": task_id}).fetchone()
     return int(row[0]) if row else fallback
@@ -36,7 +67,11 @@ def grant_points_for_completion(conn, *, user: str, task_id: str, points: int):
 
 
 def balance(conn, user: str) -> int:
-    row = conn.execute(text("SELECT COALESCE(SUM(points),0) FROM points_ledger WHERE user_name=:u"), {"u": user}).fetchone()
+    """Legacy wrapper for :func:`user_balance`."""
+    row = conn.execute(
+        text("SELECT COALESCE(SUM(points),0) FROM points_ledger WHERE user_name=:u"),
+        {"u": user},
+    ).fetchone()
     return int(row[0] or 0)
 
 
@@ -53,13 +88,22 @@ def leaderboard_week(conn, start: date, end: date):
 
 
 def redeem(conn, *, user: str, reward_id: int):
-    r = conn.execute(text("SELECT cost_points FROM rewards WHERE id=:id AND active=1"), {"id": reward_id}).fetchone()
+    """Redeem a reward for a user, deducting points."""
+    r = conn.execute(
+        text("SELECT cost_points FROM rewards WHERE id=:id AND active=1"),
+        {"id": reward_id},
+    ).fetchone()
     if not r:
-        raise ValueError("reward not found")
+        raise ValueError("reward not found or inactive")
     cost = int(r[0])
-    if balance(conn, user) < cost:
+    if user_balance(conn, user) < cost:
         raise ValueError("insufficient points")
-    conn.execute(text("INSERT INTO redemptions(user_name, reward_id, points) VALUES(:u,:rid,:p)"),
-                 {"u": user, "rid": reward_id, "p": cost})
-    conn.execute(text("INSERT INTO points_ledger(user_name, points, kind) VALUES(:u, :neg, 'redeem')"),
-                 {"u": user, "neg": -cost})
+    # Optional audit trail
+    conn.execute(
+        text("INSERT INTO redemptions(user_name, reward_id, points) VALUES(:u,:rid,:p)"),
+        {"u": user, "rid": reward_id, "p": cost},
+    )
+    conn.execute(
+        text("INSERT INTO points_ledger(user_name, points, kind) VALUES(:u, :neg, 'redeem')"),
+        {"u": user, "neg": -cost},
+    )
