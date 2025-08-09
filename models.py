@@ -33,7 +33,13 @@ class ChoreTemplate(db.Model):
     )
 
 
-# (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+# Chore metadata table for storing local metadata linked to Google Task IDs
+class ChoreMetadata(db.Model):
+    __tablename__ = "chore_metadata"
+    task_id = db.Column(db.String, primary_key=True, doc="Google Task ID (foreign key conceptually)")
+    assigned_to = db.Column(db.String, nullable=True, doc="Person assigned to this chore")
+    priority = db.Column(db.String, nullable=True, doc="Priority of the chore (low/medium/high)")
+    # Add more fields as needed
 # class User(UserMixin, db.Model):
 #    __tablename__ = 'users'
 #    id = db.Column(db.String, primary_key=True)

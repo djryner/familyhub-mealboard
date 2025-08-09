@@ -14,11 +14,14 @@ from typing import List, Optional
 import os
 import logging
 
+
 from tasks_api import (
     build_google_service,
     get_or_create_task_list,
     get_google_tasks,
 )
+from models import ChoreMetadata
+from db import db
 
 logger = logging.getLogger("chores_service")
 
@@ -47,35 +50,40 @@ def _service_and_list():
 
 
 def _google_fetch() -> List[ChoreDTO]:
-    """Fetches all tasks from Google and normalizes them into ChoreDTOs."""
+    """Fetches all tasks from Google and normalizes them into ChoreDTOs, using local metadata if available."""
     logger.info("_google_fetch: building service & retrieving task list")
     svc, task_list_id = _service_and_list()
     logger.info("_google_fetch: using task_list_id=%s", task_list_id)
     tasks = get_google_tasks(svc, task_list_id)
     logger.info("_google_fetch: retrieved %d raw tasks", len(tasks))
 
+    # Fetch all metadata in one go for efficiency
+    meta_map = {m.task_id: m for m in ChoreMetadata.query.all()}
+
     out: List[ChoreDTO] = []
     for t in tasks:
         due = t.get("due_date")
         due_dt = None
         # The due date from the API can be a datetime object or an ISO string.
-        # This block normalizes it to a Python date object.
         if hasattr(due, "date"):
             due_dt = due.date() if isinstance(due, datetime) else due
         else:
             try:
                 due_dt = (
                     datetime.fromisoformat(due[:10]).date() if due else None
-                )  # type: ignore[arg-type]
+                )
             except (TypeError, ValueError):
-                due_dt = None  # Ignore malformed date strings
+                due_dt = None
+        task_id = str(t.get("id") or "")
+        title = str(t.get("title") or "")
+        meta = meta_map.get(task_id)
         out.append(
             ChoreDTO(
-                id=t.get("id"),
-                title=t.get("title"),
-                assigned_to=t.get("assigned_to"),
+                id=task_id,
+                title=title,
+                assigned_to=meta.assigned_to if meta else None,
                 due_date=due_dt,
-                priority=t.get("priority", "low"),
+                priority=meta.priority if meta else "low",
                 completed=bool(t.get("completed")),
                 notes=t.get("description") or t.get("notes"),
             )
@@ -168,34 +176,15 @@ def create_chore(
     priority: str = "low",
     notes: Optional[str] = None,
 ) -> ChoreDTO:
-    """Creates a new chore in the backend and returns its DTO.
-
-    This function encodes metadata like assignee and priority into the notes
-    field of the Google Task. This allows for storing richer data than what
-    is natively supported by the Google Tasks API.
-    """
+    """Creates a new chore in the backend and stores metadata locally."""
     if CHORES_BACKEND != "google":
         raise NotImplementedError("Only google backend supported")
     svc, task_list_id = _service_and_list()
 
-    # Compose the notes field with structured metadata
-    meta_parts = []
-    if assigned_to:
-        meta_parts.append(f"assigned:{assigned_to}")
-    if priority:
-        meta_parts.append(f"priority:{priority}")
-
-    combined_notes = notes.strip() if notes else ""
-    if meta_parts:
-        # Append metadata to the existing notes, separated by a newline.
-        if combined_notes:
-            combined_notes += "\n"
-        combined_notes += " | ".join(meta_parts)
-
     # Build the request body for the Google Tasks API
     body: dict = {"title": title}
-    if combined_notes:
-        body["notes"] = combined_notes
+    if notes:
+        body["notes"] = notes.strip()
     if due_date:
         # Google Tasks API requires due date in RFC 3339 format.
         body["due"] = due_date.isoformat() + "T00:00:00.000Z"
@@ -203,6 +192,16 @@ def create_chore(
     # Create the task and log the result
     task = svc.tasks().insert(tasklist=task_list_id, body=body).execute()
     logger.info("create_chore: created task %s (%s)", task.get("title"), task.get("id"))
+
+    # Store metadata in the local database
+
+    # Store metadata in the local database (use SQLAlchemy attribute assignment)
+    meta = ChoreMetadata()
+    meta.task_id = str(task.get("id") or "")
+    meta.assigned_to = assigned_to
+    meta.priority = priority
+    db.session.add(meta)
+    db.session.commit()
 
     # Return a normalized DTO for the newly created chore
     return ChoreDTO(
@@ -212,5 +211,5 @@ def create_chore(
         due_date=due_date,
         priority=priority,
         completed=False,
-        notes=combined_notes or None,
+        notes=notes.strip() if notes else None,
     )

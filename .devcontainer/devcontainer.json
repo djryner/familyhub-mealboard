@@ -8,7 +8,7 @@
       "extensions": ["ms-python.python"]
     }
   },
-  "forwardPorts": [5000],
+  "forwardPorts": [5050],
   "portsAttributes": {
     "5000": {
       "label": "Flask App",

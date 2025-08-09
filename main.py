@@ -14,4 +14,4 @@ import routes  # noqa: F401
 
 if __name__ == "__main__":
     # This block runs the app in debug mode when the script is executed directly.
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5050, debug=True)
