@@ -181,19 +181,22 @@ def create_chore():
         template_id = request.form["template_id"]  # Selected chore template
         assigned_to = request.form["assigned_to"]
         due = request.form["due_date"]  # YYYY-MM-DD
+        points = int(request.form.get("points", 1))
 
         tmpl = ChoreTemplate.query.get_or_404(template_id)
         title = tmpl.name
         notes = f"Assigned to: {assigned_to}"
 
-        # Construct the task payload for the Google Tasks API
-        task = {
-            "title": title,
-            "notes": notes,
-            "due": f"{due}T23:59:59.000Z",  # Set due time to end of day UTC
-            "status": "needsAction",
-        }
-        service.tasks().insert(tasklist=task_list_id, body=task).execute()
+        # Use the service layer to create the chore and store metadata
+        from services.chores_service import create_chore as service_create_chore
+        service_create_chore(
+            title=title,
+            assigned_to=assigned_to,
+            due_date=datetime.strptime(due, "%Y-%m-%d").date(),
+            priority="low",
+            notes=notes,
+            points=points,
+        )
         flash(f"Chore '{title}' created successfully!", "success")
         return redirect(url_for("view_chores"))
 

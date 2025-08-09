@@ -39,6 +39,7 @@ class ChoreMetadata(db.Model):
     task_id = db.Column(db.String, primary_key=True, doc="Google Task ID (foreign key conceptually)")
     assigned_to = db.Column(db.String, nullable=True, doc="Person assigned to this chore")
     priority = db.Column(db.String, nullable=True, doc="Priority of the chore (low/medium/high)")
+    points = db.Column(db.Integer, nullable=False, default=1, doc="Point value for completing this chore")
     # Add more fields as needed
 # class User(UserMixin, db.Model):
 #    __tablename__ = 'users'

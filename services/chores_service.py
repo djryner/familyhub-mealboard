@@ -40,6 +40,7 @@ class ChoreDTO:
     priority: str  # 'low' | 'medium' | 'high'
     completed: bool
     notes: Optional[str] = None
+    points: int = 1
 
 
 def _service_and_list():
@@ -89,6 +90,7 @@ def _google_fetch() -> List[ChoreDTO]:
                 priority=meta.priority if meta else "low",
                 completed=bool(t.get("completed")),
                 notes=t.get("description") or t.get("notes"),
+                points=meta.points if meta and meta.points is not None else 1,
             )
         )
     return out
@@ -178,6 +180,7 @@ def create_chore(
     due_date: Optional[date] = None,
     priority: str = "low",
     notes: Optional[str] = None,
+    points: int = 1,
 ) -> ChoreDTO:
     """Creates a new chore in the backend and stores metadata locally."""
     if CHORES_BACKEND != "google":
@@ -203,6 +206,7 @@ def create_chore(
     meta.task_id = str(task.get("id") or "")
     meta.assigned_to = assigned_to
     meta.priority = priority
+    meta.points = points
     db.session.add(meta)
     db.session.commit()
 
@@ -215,4 +219,5 @@ def create_chore(
         priority=priority,
         completed=False,
         notes=notes.strip() if notes else None,
+        points=meta.points,
     )
