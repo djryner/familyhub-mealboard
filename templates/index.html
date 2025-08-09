@@ -3,109 +3,118 @@
 {% block title %}Dashboard - Family Hub{% endblock %}
 
 {% block content %}
-<!-- Dashboard Header -->
+<style>
+.meal-row {
+    display:flex;
+    overflow-x:auto;
+    gap:12px;
+}
+.meal-card {
+    flex:0 0 auto;
+    min-width:110px;
+    border:1px solid #dee2e6;
+    border-radius:.5rem;
+    padding:.5rem .75rem;
+}
+.meal-card.today {
+    border-color:#28a745;
+    background:#e6ffe6;
+}
+.chore-card {
+    border:1px solid #dee2e6;
+    border-radius:.5rem;
+    padding:1rem;
+    margin-bottom:1rem;
+}
+.chore-card.completed {
+    opacity:.55;
+    text-decoration:line-through;
+}
+.btn-complete {
+    width:100%;
+    margin-top:.75rem;
+}
+</style>
+
 <div class="section-header">
-    <h1><i class="fas fa-tachometer-alt me-2"></i>Family Dashboard</h1>
-    
+    <h1>Family Dashboard</h1>
 </div>
 
-<!-- Quick Stats -->
-<div class="row mb-4">
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="stats-card">
-            <span class="stats-number">{{ chores|length if chores else 0 }}</span>
-            <span class="stats-label">Active Chores</span>
-        </div>
+<div class="card mb-4">
+    <div class="card-header">
+        <h4 class="mb-0">Meals This Week</h4>
     </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="stats-card bg-success">
-            <span class="stats-number">{{ meals|length if meals else 0 }}</span>
-            <span class="stats-label">Planned Meals</span>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="stats-card bg-info">
-            <span class="stats-number">{{ (chores|selectattr('completed', 'equalto', true)|list)|length if chores else 0 }}</span>
-            <span class="stats-label">Completed Today</span>
-        </div>
-    </div>
-</div>
-
-
-<!-- Main Content Grid -->
-<div class="row">
-    <!-- Upcoming Chores -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="fas fa-tasks me-2"></i>Upcoming Chores</h4>
-                <span class="badge bg-primary">{{ chores|length if chores else 0 }}</span>
-            </div>
-            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                {% if chores %}
-                    {% for chore in chores[:5] %}
-                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">{{ chore.title }}</h6>
-                                <small class="text-muted">
-                                    {% if chore.assigned_to %}{{ chore.assigned_to }}{% endif %}
-                                    {% if chore.due_date %} • {{ chore.due_date.strftime('%m/%d') }}{% endif %}
-                                </small>
-                            </div>
-                            <span class="badge bg-{{ 'danger' if chore.priority == 'high' else 'warning' if chore.priority == 'medium' else 'secondary' }}">
-                                {{ chore.priority }}
-                            </span>
-                        </div>
-                    {% endfor %}
-                    {% if chores|length > 5 %}
-                        <div class="text-center">
-                            <small class="text-muted">...and {{ chores|length - 5 }} more chores</small>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-                        <h5>All Caught Up!</h5>
-                        <p class="text-muted">No pending chores</p>
-                    </div>
+    <div class="card-body">
+        {% if meals %}
+        {% set today_str = today if today is string else today.strftime('%Y-%m-%d') %}
+        {% set dt = __import__('datetime').datetime %}
+        <div class="meal-row">
+            {% for meal in meals[:7] %}
+                {% set meal_dt = meal.date %}
+                {% if meal_dt is string %}
+                    {% set meal_dt = dt.strptime(meal_dt, '%Y-%m-%d') %}
                 {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Upcoming Meals -->
-<div class="col-lg-6 mb-4">
-    <div class="card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0"><i class="fas fa-utensils me-2"></i>Upcoming Meals</h4>
-            <span class="badge bg-success">{{ meals|length if meals else 0 }}</span>
-        </div>
-        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-            {% if meals %}
-                {% for meal in meals[:5] %}
-                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
-                        <div class="flex-grow-1">
-                            <h6 class="mb-1">{{ meal.meal.title() }}</h6>
-                            <small class="text-muted">
-                                {{ meal.date }}
-                            </small>
-                        </div>
-                    </div>
-                {% endfor %}
-                {% if meals|length > 5 %}
-                    <div class="text-center">
-                        <small class="text-muted">...and {{ meals|length - 5 }} more meals</small>
-                    </div>
-                {% endif %}
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-calendar-plus fa-4x text-info mb-3"></i>
-                    <h5>No Meals Planned</h5>
-                    <p class="text-muted">Schedule your next meal</p>
-                    
+                {% set meal_date_str = meal_dt.strftime('%Y-%m-%d') %}
+                <div class="meal-card {% if meal_date_str == today_str %}today{% endif %}">
+                    <div class="text-muted small">{{ meal_dt.strftime('%a') }} {{ meal_dt.strftime('%m/%d') }}</div>
+                    <div>{{ meal.meal }}</div>
                 </div>
-            {% endif %}
+            {% endfor %}
         </div>
+        {% else %}
+        <p class="text-muted mb-0">No meals planned yet.</p>
+        {% endif %}
     </div>
 </div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">Today's Chores</h4>
+    </div>
+    <div class="card-body">
+        {% set today_str = today if today is string else today.strftime('%Y-%m-%d') %}
+        {% set found = namespace(value=false) %}
+        {% for chore in chores %}
+            {% if chore.due_date %}
+                {% set due_str = chore.due_date if chore.due_date is string else chore.due_date.strftime('%Y-%m-%d') %}
+                {% if due_str == today_str %}
+                    {% set found.value = true %}
+                    <div class="chore-card {% if chore.completed %}completed{% endif %}" id="chore-{{ chore.id }}">
+                        <div class="fw-bold">{{ chore.title }}</div>
+                        <div class="text-muted small">
+                            {% if chore.assigned_to %}{{ chore.assigned_to }} • {% endif %}{{ chore.priority.capitalize() }}
+                        </div>
+                        <button class="btn btn-success btn-complete" data-complete-url="{{ url_for('complete_chore', chore_id=chore.id) }}" {% if chore.completed %}disabled{% endif %}>
+                            {{ 'Completed' if chore.completed else 'Mark Complete' }}
+                        </button>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% if not found.value %}
+            <p class="text-muted mb-0">No chores due today.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('click', async function(e) {
+    if (e.target.classList.contains('btn-complete')) {
+        const btn = e.target;
+        if (btn.disabled) return;
+        const url = btn.dataset.completeUrl;
+        const card = btn.closest('.chore-card');
+        try {
+            const resp = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({completed: true})});
+            if (resp.ok) {
+                card.classList.add('completed');
+                btn.textContent = 'Completed';
+                btn.disabled = true;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+});
+</script>
 {% endblock %}

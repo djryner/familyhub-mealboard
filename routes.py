@@ -163,3 +163,9 @@ def create_chore():
     return render_template('create_chore.html', categories=categories)
 
 
+@app.post('/chores/<string:chore_id>/complete', endpoint='complete_chore')
+def complete_chore(chore_id):
+    # TODO: persist completion (e.g., Google Tasks); return 204 on success
+    return ('', 204)
+
+
