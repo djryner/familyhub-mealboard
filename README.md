@@ -6,6 +6,7 @@ Core layers:
 * `app.py` – Flask app factory/initialization & DB setup.
 * `routes.py` – HTTP routes (will be split into blueprints in future refactor).
 * `calendar_api.py` – Google Calendar meal fetching (returns normalized mapping).
+* `services/meals_service.py` – Normalizes meal events into `MealDTO` objects for both dashboard and meal plans pages.
 * `tasks_api.py` – Low-level Google Tasks integration helpers.
 * `services/chores_service.py` – Single source of truth for chores (Google Tasks backend) exposing DTOs.
 * `models.py` – SQLAlchemy models (currently only `ChoreTemplate`).
@@ -37,7 +38,7 @@ pytest -q
 ## Pending Work
 Planned next steps include:
 * Introduce blueprints (`/api`, `/dashboard`).
-* Add service layer for meal/chores logic.
+* (Done) Added service layer for meals (`services/meals_service.py`).
 * Expand tests for route responses (index, chores, meal-plans).
 * Add type checking gate in CI.
 
@@ -45,9 +46,15 @@ Planned next steps include:
 
 ## Google Calendar dinner plans
 
-The application can fetch upcoming dinner plans from a shared Google Calendar.
-Events within a 7‑day window around today are returned by the `/api/meals`
-endpoint as a dictionary keyed by ISO date strings.
+The application fetches dinner plans from a shared Google Calendar. Raw events
+are first retrieved by `services/calendar_service.get_meals()` (mapping of ISO
+date -> list of titles). Both the Dashboard ("Meals This Week") and Meal Plans
+pages consume the unified `services/meals_service.fetch_meals()` function which
+emits a list of `MealDTO(date, title)` objects. This ensures consistent
+normalization (dates always `datetime.date`, field name always `title`).
+
+The legacy `/api/meals` endpoint still exposes the mapping form for backwards
+compatibility.
 
 ### Setup
 1. **Create a Google service account** and download its JSON key.
@@ -59,8 +66,9 @@ endpoint as a dictionary keyed by ISO date strings.
    - `FAMILYHUB_CALENDAR_ID`: ID of the shared calendar.
    - Optional `FAMILYHUB_TZ`: Timezone name (defaults to `America/Chicago`).
 
-With these variables configured, the `/api/meals` route will return the
-meal plan as JSON and can be consumed by the frontend.
+With these variables configured, the `/api/meals` route returns the mapping
+while the UI uses the DTO list. If multiple events share the same date and
+title, only the last one is kept (deterministic de-duplication rule).
 
 ## Chores Source of Truth
 

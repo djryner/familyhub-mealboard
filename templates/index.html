@@ -12,16 +12,32 @@
 
     .meal-card {
         flex: 0 0 auto;
-        min-width: 110px;
+        min-width: 160px; /* provide room for weekday + date + title */
         border: 1px solid #dee2e6;
         border-radius: .5rem;
         padding: .5rem .75rem;
+        white-space: normal; /* allow wrapping */
+        word-break: break-word; /* prevent overflow for long words */
     }
 
+    /* Accessibility / Contrast: previously a light green background with light (inherited) text caused "blank" looking card.
+       Switch to outline highlight so we retain dark theme background and high-contrast light text. */
     .meal-card.today {
+        outline: 2px solid #28a745;
+        outline-offset: 0;
         border-color: #28a745;
-        background: #e6ffe6;
+        background: inherit; /* keep dark theme */
     }
+
+    .meal-name {
+        margin-top: 2px;
+        font-weight: 600;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    /* So muted meta line is still readable on dark background */
+    .meal-card .text-muted { color: #9ca3af !important; }
 
     .chore-card {
         border: 1px solid #dee2e6;
@@ -62,11 +78,9 @@
         {% if meals %}
         <div class="meal-row">
             {% for meal in meals[:7] %}
-            <div class="meal-card {% if meal.iso == today_iso %}today{% endif %}">
-                <div class="text-muted small">
-                    {{ meal.dow }} {{ meal.mmdd }}
-                </div>
-                <div>{{ meal.meal }}</div>
+            <div class="meal-card {% if meal.date == today %}today{% endif %}" aria-label="{{ meal.date.strftime('%A %m/%d') }}: {{ meal.title }}">
+                <div class="text-muted small">{{ meal.date.strftime('%a') }} • {{ meal.date.strftime('%m/%d') }}</div>
+                <div class="meal-name">{{ meal.title }}</div>
             </div>
             {% endfor %}
         </div>

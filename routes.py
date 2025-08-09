@@ -9,7 +9,7 @@ Primary responsibilities:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 from typing import List, Dict, Any
 
 from flask import (
@@ -22,9 +22,10 @@ from flask import (
     jsonify,
 )
 from app import app, db
-from calendar_api import get_meals
+from calendar_api import get_meals  # legacy JSON endpoint still uses mapping
 from tasks_api import build_google_service, get_or_create_task_list
 from services.chores_service import fetch_chores, complete_chore as service_complete_chore, ChoreDTO
+from services.meals_service import fetch_meals, MealDTO
 from models import ChoreTemplate
 
 logger = logging.getLogger("dashboard")
@@ -46,52 +47,27 @@ def api_meals():
 # Public routes
 @app.route('/')
 def index():  # noqa: D401
+    logger.info("index: start")
+
     # Unified chores source: fetch upcoming (incomplete) chores
-    logger.info("index: loading recent chores (limit=5, incomplete)")
     recent_chores: list[ChoreDTO] = fetch_chores(include_completed=False, limit=5)
     logger.info("index: loaded %d chores", len(recent_chores))
 
-    # Get today's date in ISO format
     today = date.today()
-    today_str = today.isoformat()
-
-    # Fetch and filter meals
-    meals_data = get_meals()
-    all_meals = []
-    if "error" not in meals_data:
-        for date_str in sorted(meals_data.keys()):
-            if date_str >= today_str:
-                for meal in meals_data[date_str]:
-                    upcoming_meals.append({"date": date_str, "meal": meal})
-            if len(upcoming_meals) >= 7:
-                break
-        upcoming_meals = upcoming_meals[:7]
-
-    # Format meals for template (adds dow, mmdd, iso)
-    formatted_meals = []
-    for meal in upcoming_meals:
-        if isinstance(meal['date'], str):
-            dt = datetime.strptime(meal['date'], "%Y-%m-%d").date()
-        else:
-            dt = meal['date']
-        formatted_meals.append({
-            "meal": meal["meal"],
-            "date": meal["date"],
-            "dow": dt.strftime("%a"),
-            "mmdd": dt.strftime("%m/%d"),
-            "iso": dt.strftime("%Y-%m-%d"),
-        })
-    # Add logging for meal data
-    logger.info("today: %s", today)
-    logger.info("upcoming_meals (raw): %s", upcoming_meals)
-    logger.info("formatted_meals (for template): %s", formatted_meals)
-
+    end = today + timedelta(days=6)
+    meals: list[MealDTO] = fetch_meals(start=today, end=end)
+    # Cap to 7 (already sorted inside service)
+    if len(meals) > 7:
+        meals = meals[:7]
+    logger.info("index: meals final_count=%d window=%s..%s", len(meals), today, end)
+    for m in meals:  # pragma: no cover (log only)
+        logger.info("index: meal %s %s", m.date.isoformat(), m.title)
 
     return render_template(
         'index.html',
         chores=recent_chores,
-        meals=formatted_meals,
-        today=today_str
+        meals=meals,
+        today=today
     )
 
 @app.route('/chores')
@@ -103,21 +79,10 @@ def view_chores():
 
 @app.route('/meal-plans')
 def meal_plans():
-    # Get today's date in ISO format
     today = date.today()
-    today_str = today.isoformat()
-
-    # Use get_meals() instead of MealPlan.query
-    meals_data = get_meals()
-    if "error" in meals_data:
-        meals = []
-    else:
-        # Flatten to a list of dicts for template
-        meals = []
-        for date_str in sorted(meals_data.keys()):
-            for meal in meals_data[date_str]:
-                meals.append({"date": date_str, "meal": meal})
-    return render_template('meal_plans.html', meals=meals, today=today_str)
+    # broaden window for plans - reuse calendar_service default (today +/- days)
+    meals = fetch_meals()  # full range from service; template will list all
+    return render_template('meal_plans.html', meals=[{"date": m.date.isoformat(), "meal": m.title} for m in meals], today=today.isoformat())
 
 @app.route('/chore/<task_id>/toggle', methods=['POST'])
 def toggle_task(task_id):  # legacy endpoint: mark complete only
@@ -140,21 +105,10 @@ def api_chore_templates():
     items = q.order_by(ChoreTemplate.name.asc()).all()
     return jsonify([{"id": t.id, "name": t.name, "category": t.category} for t in items])
 
-def format_meals_for_template(meals):
+def format_meals_for_template(meals):  # legacy helper (unused) kept for compatibility
     formatted = []
     for meal in meals:
-        # Parse date string to date object
-        if isinstance(meal['date'], str):
-            dt = datetime.datetime.strptime(meal['date'], "%Y-%m-%d").date()
-        else:
-            dt = meal['date']
-        formatted.append({
-            "meal": meal["meal"],
-            "date": meal["date"],
-            "dow": dt.strftime("%a"),
-            "mmdd": dt.strftime("%m/%d"),
-            "iso": dt.strftime("%Y-%m-%d"),
-        })
+        formatted.append({"meal": getattr(meal, 'title', meal.get('meal')), "date": getattr(meal, 'date', meal.get('date'))})
     return formatted
 
 @app.route('/chores/create', methods=['GET', 'POST'])
