@@ -63,8 +63,7 @@ if not settings:  # pragma: no cover safety check
 import os as _os
 
 if not _os.environ.get("SKIP_ROUTES"):
-    import routes  # noqa: F401
-    from rewards import bp as rewards_bp
+    from rewards.routes import bp as rewards_bp
     app.register_blueprint(rewards_bp, url_prefix="/rewards")
 
 if __name__ == "__main__":  # pragma: no cover

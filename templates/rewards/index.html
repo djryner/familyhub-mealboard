@@ -19,7 +19,7 @@
   <div class="kid-card">
     <div class="kid-head">
       <div class="d-flex align-items-center gap-2">
-        <div class="avatar" style="background: {{ u.color or '#7dd3fc' }};">{{ (u.avatar or u.name[0:1]).upper() }}</div>
+  <div class="avatar" style="background: {{ u.color or '#7dd3fc' }};">{{ (u.avatar or (u.name or '?')[0:1]).upper() }}</div>
         <div class="fw-semibold">{{ u.name }}</div>
       </div>
       <div class="balance">⭐ {{ bal }}</div>
