@@ -25,7 +25,6 @@ from sqlalchemy import text
 
 from app import app, db
 from calendar_api import get_meals  # legacy JSON endpoint still uses mapping
-from tasks_api import build_google_service, get_or_create_task_list
 from services.chores_service import (
     fetch_chores,
     complete_chore as service_complete_chore,
@@ -35,6 +34,13 @@ from services.meals_service import fetch_meals, MealDTO
 from services import points_service
 from config import get_settings
 from models import ChoreTemplate
+from services.schedule_utils import (
+    WK,
+    BY,
+    next_on_or_after,
+    next_in_set_on_or_after,
+    to_utc_midnight_rfc3339,
+)
 
 logger = logging.getLogger("dashboard")
 
@@ -173,29 +179,51 @@ def format_meals_for_template(meals):
 @app.route("/chores/create", methods=["GET", "POST"])
 def create_chore():
     """Handles the creation of a new chore from a template."""
-    service = build_google_service()
-    task_list_id = get_or_create_task_list(service, "Family chores")
-
     if request.method == "POST":
         # Process the form submission to create a new task in Google Tasks
         template_id = request.form["template_id"]  # Selected chore template
         assigned_to = request.form["assigned_to"]
-        due = request.form["due_date"]  # YYYY-MM-DD
         points = int(request.form.get("points", 1))
+        weekday_name = request.form.get("weekday")
+        recurrence = (request.form.get("recurrence") or "Once").strip()
 
         tmpl = ChoreTemplate.query.get_or_404(template_id)
         title = tmpl.name
         notes = f"Assigned to: {assigned_to}"
 
-        # Use the service layer to create the chore and store metadata
+        today = date.today()
+        tz_name = app.config.get("APP_TZ")
+
+        if recurrence in ("Once", "Once per week"):
+            if not weekday_name:
+                return jsonify(error="Please choose a weekday"), 400
+            wd = WK[weekday_name]
+            due_date = next_on_or_after(today, wd)
+            rrule = None if recurrence == "Once" else [f"RRULE:FREQ=WEEKLY;BYDAY={BY[wd]}"]
+        elif recurrence == "Daily":
+            due_date = today
+            rrule = ["RRULE:FREQ=DAILY"]
+        elif recurrence == "School Days":
+            due_date = next_in_set_on_or_after(today, {0,1,2,3,4})
+            rrule = ["RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"]
+        elif recurrence == "Weekends":
+            due_date = next_in_set_on_or_after(today, {5,6})
+            rrule = ["RRULE:FREQ=WEEKLY;BYDAY=SA,SU"]
+        else:
+            return jsonify(error="Invalid recurrence"), 400
+
+        due_iso = to_utc_midnight_rfc3339(due_date, tz_name)
+
         from services.chores_service import create_chore as service_create_chore
         service_create_chore(
             title=title,
             assigned_to=assigned_to,
-            due_date=datetime.strptime(due, "%Y-%m-%d").date(),
+            due_date=due_date,
             priority="low",
             notes=notes,
             points=points,
+            recurrence=rrule,
+            due_rfc3339=due_iso,
         )
         flash(f"Chore '{title}' created successfully!", "success")
         return redirect(url_for("view_chores"))
