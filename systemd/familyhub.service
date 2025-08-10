@@ -1,0 +1,18 @@
+[Unit]
+Description=FamilyHub Service
+After=network.target
+
+[Service]
+Type=notify
+WatchdogSec=30
+Restart=on-failure
+RestartSec=2
+User=pi
+WorkingDirectory=/home/pi/familyhub
+EnvironmentFile=/etc/default/familyhub
+ExecStart=/usr/bin/python3 /home/pi/familyhub/main.py
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
