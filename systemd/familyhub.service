@@ -1,16 +1,19 @@
 [Unit]
 Description=FamilyHub Service
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-Type=notify
-WatchdogSec=30
-Restart=on-failure
-RestartSec=2
+Type=simple
+# To enable sdnotify/watchdog later, switch to:
+# Type=notify
+# WatchdogSec=30s
 User=pi
 WorkingDirectory=/home/pi/familyhub
 EnvironmentFile=/etc/default/familyhub
-ExecStart=/usr/bin/python3 /home/pi/familyhub/main.py
+ExecStart=/home/pi/familyhub/.venv/bin/python /home/pi/familyhub/main.py
+Restart=on-failure
+RestartSec=2
 StandardOutput=journal
 StandardError=journal
 
