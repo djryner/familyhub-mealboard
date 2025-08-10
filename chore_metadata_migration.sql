@@ -2,6 +2,6 @@
 CREATE TABLE IF NOT EXISTS chore_metadata (
     task_id VARCHAR PRIMARY KEY,
     assigned_to VARCHAR,
-    priority VARCHAR
+    -- priority column removed
     -- Add more fields as needed
 );

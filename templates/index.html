@@ -176,16 +176,23 @@
                     <div class="fw-bold text-truncate">{{ chore.title }}</div>
                     <div class="text-muted small">
                         {% if chore.assigned_to %}{{ chore.assigned_to }}{% endif %}
-                        <!-- {% if chore.priority %}{% if chore.assigned_to %} • {% endif %}{{ chore.priority|capitalize }}{% endif %} -->
+                        <!-- priority display removed -->
                     </div>
                 </div>
-                <button
-                    class="btn btn-sm btn-outline-success chore-complete-btn btn-complete"
-                    data-complete-url="{{ url_for('complete_chore', chore_id=chore.id) }}"
-                    {% if chore.completed %}disabled{% endif %}
-                    aria-label="Mark {{ chore.title }} complete">
-                    {% if chore.completed %}Done{% else %}Complete{% endif %}
-                </button>
+                <form class="chore-complete-form" action="{{ url_for('complete_chore', chore_id=chore.id) }}" method="post" style="display:inline;">
+                    <button
+                        class="btn btn-sm btn-outline-success chore-complete-btn btn-complete"
+                        data-due="{{ chore.due_date.isoformat() if chore.due_date else '' }}"
+                        {% if chore.completed %}disabled{% endif %}
+                        aria-label="Mark {{ chore.title }} complete">
+                        {% if chore.completed %}Done{% else %}Complete{% endif %}
+                    </button>
+                </form>
+                <form action="{{ url_for('ignore_chore', chore_id=chore.id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger chore-complete-btn" {% if chore.completed %}disabled{% endif %}>
+                        <i class="fas fa-ban me-1"></i>Ignore
+                    </button>
+                </form>
             </div>
         {% endif %}
         {% endfor %}
@@ -196,29 +203,27 @@
 </div>
 
 <script>
-    document.addEventListener('click', async function (e) {
-        const btn = e.target.closest('.btn-complete');
-        if (!btn) return;
-
-        if (btn.disabled) return;
-        const url = btn.dataset.completeUrl;
-        const card = btn.closest('.chore-card');
-
-        try {
-            const resp = await fetch(url, {
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.chore-complete-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = form.querySelector('.chore-complete-btn');
+            if (btn.disabled) return;
+            const due = btn.dataset.due;
+            fetch(form.action, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ completed: true })
+                body: JSON.stringify({ due_iso: due })
+            }).then(resp => {
+                if (!resp.ok) throw new Error('Request failed');
+                btn.textContent = 'Completed';
+                btn.disabled = true;
+                btn.closest('.chore-card').classList.add('completed');
+            }).catch(err => {
+                alert('Sorry, could not complete the chore.');
             });
-            if (!resp.ok) throw new Error('Request failed');
-
-            card.classList.add('completed');
-            btn.textContent = 'Completed';
-            btn.disabled = true;
-        } catch (err) {
-            console.error(err);
-            alert('Sorry, I couldn’t complete that chore. Try again.');
-        }
+        });
     });
+});
 </script>
 {% endblock %}

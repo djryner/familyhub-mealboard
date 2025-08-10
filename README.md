@@ -70,10 +70,37 @@ With these variables configured, the `/api/meals` route returns the mapping
 while the UI uses the DTO list. If multiple events share the same date and
 title, only the last one is kept (deterministic de-duplication rule).
 
-## Chores Source of Truth
 
-Chores are currently sourced exclusively from Google Tasks via `services/chores_service.py`.
+## Chores Source of Truth & Recurring Chore Behavior
 
-Environment flag `CHORES_BACKEND` (default `google`) is reserved for a future
-DB-backed implementation. Routes and templates must not call `tasks_api` directly;
-they should use the service to ensure consistent normalization and persistence.
+Chores are sourced from Google Tasks via `services/chores_service.py`.
+
+### Recurring Chores: How They Work
+
+- When you create a recurring chore, the recurrence rule (RRULE) and the initial due date are sent to Google Tasks and also stored locally in the `chore_metadata` table (`recurrence`, `last_due_iso`).
+- When you mark a recurring chore as complete, only the current occurrence is completed (using Google Tasks API `tasks.patch`). The series is never deleted or stripped of recurrence.
+- After completion, the backend immediately refetches the task to get the new next due date (if any) and updates `last_due_iso` in the local DB.
+- The UI will refresh and show the next occurrence on the appropriate day. If the next due is not today, the task will disappear from today's list (this is correct).
+- Points are awarded only once per (task_id, due_iso) occurrence, ensuring you can't double-claim for the same instance of a recurring task.
+
+#### Example RRULEs
+
+- Daily: `["RRULE:FREQ=DAILY"]`
+- School Days: `["RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"]`
+- Weekends: `["RRULE:FREQ=WEEKLY;BYDAY=SA,SU"]`
+- Once per week (e.g., Friday): `["RRULE:FREQ=WEEKLY;BYDAY=FR"]`
+- Once: no recurrence field
+
+#### Local DB fields
+
+- `chore_metadata.recurrence`: RRULE string (if recurring)
+- `chore_metadata.last_due_iso`: Last seen due date (ISO, YYYY-MM-DD)
+
+#### Completion Flow
+
+1. UI sends the current due date (`due_iso`) with the complete request.
+2. Backend marks only the current occurrence as complete in Google Tasks.
+3. Points are awarded only if not already granted for (task_id, due_iso).
+4. The next occurrence (if any) is shown on the correct day after refresh.
+
+**This ensures recurring chores are robust, never disappear from the series, and points are occurrence-safe.**

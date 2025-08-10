@@ -60,11 +60,43 @@
                             {% endif %}
                         </div>
                     </div>
-                    <div class="card-footer text-center">
-                        <form action="{{ url_for('complete_chore', chore_id=chore.id) }}" method="post">
-                            <button type="submit" class="btn btn-sm {{ 'btn-secondary' if chore.completed else 'btn-success' }}" {% if chore.completed %}disabled{% endif %}>
+                    <div class="card-footer text-center d-flex justify-content-center gap-2">
+                        <form class="chore-complete-form" action="{{ url_for('complete_chore', chore_id=chore.id) }}" method="post" style="display:inline;">
+                            <button type="submit"
+                                class="btn btn-sm {{ 'btn-secondary' if chore.completed else 'btn-success' }} chore-complete-btn"
+                                data-due="{{ chore.due_date.isoformat() if chore.due_date else '' }}"
+                                {% if chore.completed %}disabled{% endif %}>
                                 <i class="fas fa-{{ 'check' if chore.completed else 'check' }} me-1"></i>
                                 {{ 'Completed' if chore.completed else 'Mark Complete' }}
+                            </button>
+                        </form>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.chore-complete-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = form.querySelector('.chore-complete-btn');
+            if (btn.disabled) return;
+            const due = btn.dataset.due;
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ due_iso: due })
+            }).then(resp => {
+                if (!resp.ok) throw new Error('Request failed');
+                btn.textContent = 'Completed';
+                btn.disabled = true;
+                btn.closest('.card').classList.add('border-success', 'bg-light');
+            }).catch(err => {
+                alert('Sorry, could not complete the chore.');
+            });
+        });
+    });
+});
+</script>
+                        <form action="{{ url_for('ignore_chore', chore_id=chore.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" {% if chore.completed %}disabled{% endif %}>
+                                <i class="fas fa-ban me-1"></i>Ignore
                             </button>
                         </form>
                     </div>

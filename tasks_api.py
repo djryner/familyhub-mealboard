@@ -74,7 +74,7 @@ def get_google_tasks(service, task_list_id: str) -> List[Dict[str, Any]]:
                 "due_date": parse_iso_date(task.get("due")),
                 "completed": task.get("status") == "completed",
                 "category": None,  # Category is not a native Google Tasks field.
-                "priority": "high" if "!" in task.get("title", "") else "low",
+                # priority removed
             }
         )
     return chores

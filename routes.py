@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Web route handlers.
 
 Primary responsibilities:
@@ -6,7 +7,7 @@ Primary responsibilities:
 * Integrate with Google Tasks & Calendar abstraction functions.
 """
 
-from __future__ import annotations
+
 
 import logging
 from datetime import datetime, date, timezone, timedelta
@@ -42,7 +43,17 @@ from services.schedule_utils import (
     to_utc_midnight_rfc3339,
 )
 
+
 logger = logging.getLogger("dashboard")
+
+# Route to ignore a chore (complete without awarding points)
+@app.route("/chores/<string:chore_id>/ignore", methods=["POST"], endpoint="ignore_chore")
+def ignore_chore(chore_id):
+    """Mark a chore as complete but do not award points."""
+    service_complete_chore(chore_id)
+    # Do NOT award points
+    flash("Chore ignored (no points awarded).", "warning")
+    return redirect(request.referrer or url_for("view_chores"))
 
 
 # app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
@@ -72,9 +83,10 @@ def index():
 
     settings = get_settings()
 
-    # Fetch up to 5 upcoming (incomplete) chores
-    recent_chores: list[ChoreDTO] = fetch_chores(include_completed=False, limit=5)
-    logger.info("index: loaded %d chores", len(recent_chores))
+    # Fetch all chores due today, any status
+    today = date.today()
+    chores_today: list[ChoreDTO] = fetch_chores(start=today, end=today, include_completed=True)
+    logger.info("index: loaded %d chores due today", len(chores_today))
 
     # Fetch meals for the next 7 days
     today = date.today()
@@ -102,7 +114,7 @@ def index():
 
     return render_template(
         "index.html",
-        chores=recent_chores,
+        chores=chores_today,
         meals=meals,
         today=today,
         leaderboard=leaderboard,
@@ -222,11 +234,8 @@ def create_chore():
             title=title,
             assigned_to=assigned_to,
             due_date=due_date,
-            priority="low",
-            notes=notes,
             points=points,
-            recurrence=rrule,
-            due_rfc3339=due_iso,
+            recurrence=rrule[0] if isinstance(rrule, list) else rrule,
         )
         flash(f"Chore '{title}' created successfully!", "success")
         return redirect(url_for("view_chores"))
@@ -249,6 +258,7 @@ def create_chore():
 def complete_chore_route(chore_id):
     """AJAX endpoint to mark a chore as complete. Used by dashboard cards."""
     payload = request.get_json(silent=True) or {}
+    due_iso = payload.get("due_iso")
     service_complete_chore(chore_id)
 
     settings = get_settings()
@@ -260,8 +270,11 @@ def complete_chore_route(chore_id):
             meta = conn.execute(text("SELECT assigned_to FROM chore_metadata WHERE task_id=:id"), {"id": chore_id}).fetchone()
             user = meta[0] if meta and meta[0] else None
         pts = points_service.get_chore_points(conn, chore_id, fallback=fallback)
-        if user:
-            points_service.grant_points_for_completion(conn, user=user, task_id=chore_id, points=pts)
+        # Occurrence-safe points: only award once per (task_id, due_iso)
+        if user and due_iso:
+            already = conn.execute(text("SELECT 1 FROM points_ledger WHERE user_name=:u AND task_id=:t AND kind='earn' AND occurred_at LIKE :d || '%'"), {"u": user, "t": chore_id, "d": due_iso}).fetchone()
+            if not already:
+                points_service.grant_points_for_completion(conn, user=user, task_id=chore_id, points=pts)
 
     return ("", 204)
 

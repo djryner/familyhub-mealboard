@@ -33,14 +33,27 @@ class ChoreTemplate(db.Model):
     )
 
 
-# Chore metadata table for storing local metadata linked to Google Task IDs
+
+# Chore metadata table for recurring chore definitions
 class ChoreMetadata(db.Model):
     __tablename__ = "chore_metadata"
-    task_id = db.Column(db.String, primary_key=True, doc="Google Task ID (foreign key conceptually)")
+    task_id = db.Column(db.String, primary_key=True, doc="Unique chore definition ID")
+    title = db.Column(db.String, nullable=False, doc="Chore title")
     assigned_to = db.Column(db.String, nullable=True, doc="Person assigned to this chore")
-    priority = db.Column(db.String, nullable=True, doc="Priority of the chore (low/medium/high)")
+    recurrence = db.Column(db.String, nullable=True, doc="Recurrence rule (e.g., RRULE)")
     points = db.Column(db.Integer, nullable=False, default=1, doc="Point value for completing this chore")
-    # Add more fields as needed
+
+# Chore occurrences table for each instance of a chore
+class ChoreOccurrence(db.Model):
+    __tablename__ = "chores"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    task_id = db.Column(db.String, db.ForeignKey("chore_metadata.task_id"), nullable=False)
+    due_date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String, nullable=False, default="pending")  # pending, completed, ignored
+    completed_at = db.Column(db.DateTime, nullable=True)
+    ignored_at = db.Column(db.DateTime, nullable=True)
+    # Relationships
+    chore_def = db.relationship("ChoreMetadata", backref="occurrences")
 # class User(UserMixin, db.Model):
 #    __tablename__ = 'users'
 #    id = db.Column(db.String, primary_key=True)

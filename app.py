@@ -50,11 +50,18 @@ def safe_url_for(endpoint: str, **values) -> str:
 
 app.jinja_env.globals.setdefault("safe_url_for", safe_url_for)
 
+
 with app.app_context():  # pragma: no cover - startup side effects
     import models  # noqa: F401  # ensure models registered
-
     db.create_all()
     log.info("Database tables created")
+    # Clean up outstanding chores due today
+    try:
+        from services.chores_service import ignore_uncompleted_chores_before_today
+        ignore_uncompleted_chores_before_today()
+        log.info("Outstanding chores due before today have been auto-ignored.")
+    except Exception as e:
+        log.error(f"Failed to auto-ignore outstanding chores: {e}")
 
 if not settings:  # pragma: no cover safety check
     raise RuntimeError("Settings failed to load")

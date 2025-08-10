@@ -1,229 +1,161 @@
-"""Chores service abstraction.
-
-Single source of truth for chores. Currently backed by Google Tasks.
-Provides a narrow, testable seam so routes/templates don't reach directly
-into tasks_api or the database. A future CHORES_BACKEND switch can enable
-an alternate implementation.
-"""
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-from datetime import datetime, date, timezone
-from typing import List, Optional
-import os
-import logging
-
-
-from tasks_api import (
-    build_google_service,
-    get_or_create_task_list,
-    get_google_tasks,
-)
-from models import ChoreMetadata
-from db import db
-
-logger = logging.getLogger("chores_service")
-
-# Optional backend flag (future: implement DB branch if needed)
-CHORES_BACKEND = os.getenv("CHORES_BACKEND", "google").lower()
-
-
-@dataclass
-class ChoreDTO:
-    """Data Transfer Object for a chore, providing a stable, backend-agnostic interface."""
-
-    id: str
-    title: str
-    assigned_to: Optional[str]
-    due_date: Optional[date]
-    priority: str  # 'low' | 'medium' | 'high'
-    completed: bool
-    notes: Optional[str] = None
-    points: int = 1
-
-
-def _service_and_list():
-    """Initializes the Google service and gets the target task list ID."""
-    svc = build_google_service()
-    task_list_id = get_or_create_task_list(svc, "Family chores")
-    return svc, task_list_id
-
-
-def _google_fetch() -> List[ChoreDTO]:
-    """Fetches all tasks from Google and normalizes them into ChoreDTOs, using local metadata if available."""
-    logger.info("_google_fetch: building service & retrieving task list")
-    svc, task_list_id = _service_and_list()
-    logger.info("_google_fetch: using task_list_id=%s", task_list_id)
-    tasks = get_google_tasks(svc, task_list_id)
-    logger.info("_google_fetch: retrieved %d raw tasks", len(tasks))
-
-    # Fetch all metadata in one go for efficiency
-    try:
-        meta_map = {m.task_id: m for m in ChoreMetadata.query.all()}
-    except Exception:  # pragma: no cover - occurs when DB not initialized
-        meta_map = {}
-
-    out: List[ChoreDTO] = []
-    for t in tasks:
-        due = t.get("due_date")
-        due_dt = None
-        # The due date from the API can be a datetime object or an ISO string.
-        if hasattr(due, "date"):
-            due_dt = due.date() if isinstance(due, datetime) else due
-        else:
-            try:
-                due_dt = (
-                    datetime.fromisoformat(due[:10]).date() if due else None
-                )
-            except (TypeError, ValueError):
-                due_dt = None
-        task_id = str(t.get("id") or "")
-        title = str(t.get("title") or "")
-        meta = meta_map.get(task_id)
-        out.append(
-            ChoreDTO(
-                id=task_id,
-                title=title,
-                assigned_to=meta.assigned_to if meta else None,
-                due_date=due_dt,
-                priority=meta.priority if meta else "low",
-                completed=bool(t.get("completed")),
-                notes=t.get("description") or t.get("notes"),
-                points=meta.points if meta and meta.points is not None else 1,
-            )
-        )
-    return out
-
-
-def fetch_chores(
-    start: Optional[date] = None,
-    end: Optional[date] = None,
-    *,
-    include_completed: bool = True,
-    limit: Optional[int] = None,
-) -> List[ChoreDTO]:
-    """Fetches and filters chores from the configured backend.
-
-    Args:
-        start: The start date for filtering chores (inclusive).
-        end: The end date for filtering chores (inclusive).
-        include_completed: Whether to include completed chores in the result.
-        limit: The maximum number of chores to return.
-
-    Returns:
-        A sorted and filtered list of ChoreDTOs.
-    """
-    if CHORES_BACKEND != "google":  # placeholder for future DB backend
-        logger.warning("Non-google backend not implemented; defaulting to google")
-
-    logger.info(
-        "fetch_chores: start=%s end=%s include_completed=%s limit=%s",
-        start,
-        end,
-        include_completed,
-        limit,
-    )
-    chores = _google_fetch()
-    logger.info("fetch_chores: %d chores after raw fetch", len(chores))
-
-    # Apply filters based on arguments
-    if not include_completed:
-        chores = [c for c in chores if not c.completed]
-        logger.info("fetch_chores: filtered to %d incomplete chores", len(chores))
-    if start:
-        chores = [c for c in chores if c.due_date and c.due_date >= start]
-    if end:
-        chores = [c for c in chores if c.due_date and c.due_date <= end]
-
-    # Sort chores by due date (placing chores without a due date at the end), then by title.
-    chores.sort(key=lambda c: (c.due_date or date.max, c.title.lower()))
-
-    # Apply the limit after sorting
-    if limit is not None and len(chores) > limit:
-        chores = chores[:limit]
-        logger.info("fetch_chores: truncated to limit -> %d chores", len(chores))
-
-    # Log a brief summary for debugging
-    if chores:
-        preview = ", ".join(f"{c.id}:{c.title}" for c in chores[:5])
-        logger.info(
-            "fetch_chores: returning %d chores (preview: %s%s)",
-            len(chores),
-            preview,
-            "..." if len(chores) > 5 else "",
-        )
-    return chores
-
-
-def complete_chore(chore_id: str) -> None:
-    """Marks a specific chore as complete in the backend."""
-    if CHORES_BACKEND != "google":
-        raise NotImplementedError("Only google backend supported")
-    svc, task_list_id = _service_and_list()
-    task = svc.tasks().get(tasklist=task_list_id, task=chore_id).execute()
-    # Only update the task if it's not already completed to avoid unnecessary API calls.
-    if task.get("status") != "completed":
-        task["status"] = "completed"
-        task["completed"] = (
-            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-        )
-        svc.tasks().update(tasklist=task_list_id, task=chore_id, body=task).execute()
-        logger.info("Marked chore %s complete", chore_id)
-    else:
-        logger.info("Chore %s already complete", chore_id)
-
-
-def create_chore(
-    title: str,
-    assigned_to: Optional[str] = None,
-    due_date: Optional[date] = None,
-    priority: str = "low",
-    notes: Optional[str] = None,
-    points: int = 1,
-    recurrence: Optional[list[str]] = None,
-    due_rfc3339: Optional[str] = None,
-) -> ChoreDTO:
-    """Creates a new chore in the backend and stores metadata locally."""
-    if CHORES_BACKEND != "google":
-        raise NotImplementedError("Only google backend supported")
-    svc, task_list_id = _service_and_list()
-
-    # Build the request body for the Google Tasks API
-    body: dict = {"title": title}
-    if notes:
-        body["notes"] = notes.strip()
-    if due_rfc3339:
-        body["due"] = due_rfc3339
-    elif due_date:
-        # Google Tasks API requires due date in RFC 3339 format.
-        body["due"] = due_date.isoformat() + "T00:00:00.000Z"
-    if recurrence:
-        body["recurrence"] = recurrence
-
-    # Create the task and log the result
-    task = svc.tasks().insert(tasklist=task_list_id, body=body).execute()
-    logger.info("create_chore: created task %s (%s)", task.get("title"), task.get("id"))
-
-    # Store metadata in the local database
-
-    # Store metadata in the local database (use SQLAlchemy attribute assignment)
-    meta = ChoreMetadata()
-    meta.task_id = str(task.get("id") or "")
-    meta.assigned_to = assigned_to
-    meta.priority = priority
-    meta.points = points
-    db.session.add(meta)
+def ignore_uncompleted_chores_before_today():
+    """Mark all chores due before today as ignored if not already completed or ignored."""
+    today = date.today()
+    pending = ChoreOccurrence.query.filter(
+        ChoreOccurrence.due_date < today,
+        ChoreOccurrence.status == 'pending'
+    ).all()
+    for occ in pending:
+        occ.status = 'ignored'
+        occ.ignored_at = datetime.utcnow()
     db.session.commit()
 
-    # Return a normalized DTO for the newly created chore
-    return ChoreDTO(
-        id=task.get("id"),
-        title=task.get("title"),
-        assigned_to=assigned_to,
-        due_date=due_date,
-        priority=priority,
-        completed=False,
-        notes=notes.strip() if notes else None,
-        points=meta.points,
-    )
+from datetime import datetime, date, timedelta
+from typing import List, Optional
+from models import ChoreMetadata, ChoreOccurrence
+from db import db
+
+def _parse_rrule(rrule: str, after: date) -> Optional[date]:
+    """Given an RRULE string and a date, return the next due date after the given date."""
+    # Only basic support for FREQ=DAILY, WEEKLY, BYDAY, etc.
+    if not rrule:
+        return None
+    rule = rrule.upper()
+    if rule.startswith("RRULE:FREQ=DAILY"):
+        return after + timedelta(days=1)
+    if rule.startswith("RRULE:FREQ=WEEKLY"):
+        # Parse BYDAY
+        import re
+        m = re.search(r"BYDAY=([A-Z,]+)", rule)
+        if not m:
+            return after + timedelta(days=7)
+        days = m.group(1).split(",")
+        # Map weekday string to Python weekday (MO=0, SU=6)
+        day_map = {"MO":0,"TU":1,"WE":2,"TH":3,"FR":4,"SA":5,"SU":6}
+        after_wd = after.weekday()
+        # Find the next day in BYDAY after 'after'
+        offsets = sorted((day_map[d] - after_wd) % 7 for d in days)
+        for offset in offsets:
+            if offset > 0:
+                return after + timedelta(days=offset)
+        # If none found, return the first in the next week
+        return after + timedelta(days=offsets[0] if offsets else 7)
+    return None
+
+class ChoreDTO:
+    def __init__(self, id, title, assigned_to, due_date, status, points):
+        self.id = id
+        self.title = title
+        self.assigned_to = assigned_to
+        self.due_date = due_date
+        self.status = status
+        self.completed = status == 'completed'
+        self.points = points
+
+def fetch_chores(start: Optional[date]=None, end: Optional[date]=None, *, include_completed=True, limit=None) -> List[ChoreDTO]:
+    """Fetch all chore occurrences, optionally filtered by date/status."""
+    q = ChoreOccurrence.query
+    if not include_completed:
+        q = q.filter(ChoreOccurrence.status == 'pending')
+    if start:
+        q = q.filter(ChoreOccurrence.due_date >= start)
+    if end:
+        q = q.filter(ChoreOccurrence.due_date <= end)
+    q = q.order_by(ChoreOccurrence.due_date.asc())
+    if limit:
+        q = q.limit(limit)
+    results = q.all()
+    dtos = []
+    for occ in results:
+        meta = occ.chore_def
+        dtos.append(ChoreDTO(
+            id=occ.id,
+            title=meta.title,
+            assigned_to=meta.assigned_to,
+            due_date=occ.due_date,
+            status=occ.status,
+            points=meta.points
+        ))
+    return dtos
+
+def create_chore(title: str, assigned_to: Optional[str], due_date: date, points: int = 1, recurrence: Optional[str] = None) -> ChoreDTO:
+    """Create a new recurring chore definition and its first occurrence."""
+    # Generate a unique task_id (could use uuid4 or slug)
+    import uuid
+    task_id = str(uuid.uuid4())
+    meta = ChoreMetadata()
+    meta.task_id = task_id
+    meta.title = title
+    meta.assigned_to = assigned_to
+    meta.recurrence = recurrence
+    meta.points = points
+    occ = ChoreOccurrence()
+    occ.task_id = task_id
+    occ.due_date = due_date
+    occ.status = 'pending'
+    db.session.add(meta)
+    db.session.add(occ)
+    db.session.commit()
+    return ChoreDTO(id=occ.id, title=title, assigned_to=assigned_to, due_date=due_date, status='pending', points=points)
+
+def complete_chore(occurrence_id: int) -> None:
+    """Mark a chore occurrence as completed and insert the next occurrence if recurring."""
+    occ = ChoreOccurrence.query.get(occurrence_id)
+    if not occ or occ.status != 'pending':
+        return
+    occ.status = 'completed'
+    occ.completed_at = datetime.utcnow()
+    meta = occ.chore_def
+    # Insert next occurrence if recurring
+    if meta.recurrence:
+        next_due = _parse_rrule(meta.recurrence, occ.due_date)
+        if next_due:
+            exists = ChoreOccurrence.query.filter_by(task_id=meta.task_id, due_date=next_due).first()
+            if not exists:
+                new_occ = ChoreOccurrence()
+                new_occ.task_id = meta.task_id
+                new_occ.due_date = next_due
+                new_occ.status = 'pending'
+                db.session.add(new_occ)
+    db.session.commit()
+
+def ignore_chore(occurrence_id: int) -> None:
+    """Mark a chore occurrence as ignored and insert the next occurrence if recurring."""
+    occ = ChoreOccurrence.query.get(occurrence_id)
+    if not occ or occ.status != 'pending':
+        return
+    occ.status = 'ignored'
+    occ.ignored_at = datetime.utcnow()
+    meta = occ.chore_def
+    # Insert next occurrence if recurring
+    if meta.recurrence:
+        next_due = _parse_rrule(meta.recurrence, occ.due_date)
+        if next_due:
+            exists = ChoreOccurrence.query.filter_by(task_id=meta.task_id, due_date=next_due).first()
+            if not exists:
+                new_occ = ChoreOccurrence()
+                new_occ.task_id = meta.task_id
+                new_occ.due_date = next_due
+                new_occ.status = 'pending'
+                db.session.add(new_occ)
+    db.session.commit()
+
+def auto_ignore_overdue():
+    """Mark all overdue pending chores as ignored and insert next occurrence if recurring."""
+    today = date.today()
+    overdue = ChoreOccurrence.query.filter(ChoreOccurrence.status == 'pending', ChoreOccurrence.due_date < today).all()
+    for occ in overdue:
+        occ.status = 'ignored'
+        occ.ignored_at = datetime.utcnow()
+        meta = occ.chore_def
+        if meta.recurrence:
+            next_due = _parse_rrule(meta.recurrence, occ.due_date)
+            if next_due:
+                exists = ChoreOccurrence.query.filter_by(task_id=meta.task_id, due_date=next_due).first()
+                if not exists:
+                    new_occ = ChoreOccurrence()
+                    new_occ.task_id = meta.task_id
+                    new_occ.due_date = next_due
+                    new_occ.status = 'pending'
+                    db.session.add(new_occ)
+    db.session.commit()

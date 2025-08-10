@@ -82,7 +82,7 @@ def test_fetch_chores_normalizes_dates(monkeypatch):
             "title": "Task A",
             "assigned_to": "Alex",
             "due_date": date.today(),
-            "priority": "high",
+            # priority removed
             "completed": False,
         },
         {
@@ -90,7 +90,7 @@ def test_fetch_chores_normalizes_dates(monkeypatch):
             "title": "Task B",
             "assigned_to": None,
             "due_date": None,
-            "priority": "low",
+            # priority removed
             "completed": True,
         },
     ]
@@ -113,7 +113,7 @@ def test_complete_chore_persists(monkeypatch):
             "title": "Wash Dishes",
             "assigned_to": None,
             "due_date": None,
-            "priority": "low",
+            # priority removed
             "completed": False,
         },
     ]

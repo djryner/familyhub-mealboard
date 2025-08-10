@@ -27,7 +27,7 @@
                 <th>Title</th>
                 <th>Assigned</th>
                 <th>Due</th>
-                <th>Priority</th>
+                <!-- Priority column removed -->
                 <th>Status</th>
                 <th style="width:110px;">Actions</th>
             </tr>
@@ -42,8 +42,7 @@
                 <td>{{ chore.assigned_to or '-' }}</td>
                 <td>{{ chore.due_date.strftime('%m/%d/%Y') if chore.due_date else '-' }}</td>
                 <td>
-                    <span class="badge bg-{% if chore.priority=='high' %}danger{% elif chore.priority=='medium' %}warning{% else %}secondary{% endif %}">
-                        {{ chore.priority.title() }}
+                    <!-- Priority badge removed -->
                     </span>
                 </td>
                 <td>
@@ -90,8 +89,7 @@
                             <input type="text" class="form-control" id="title" name="title" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label for="priority" class="form-label">Priority *</label>
-                            <select class="form-select" id="priority" name="priority" required>
+                            <!-- Priority form field removed -->
                                 <option value="low">Low</option>
                                 <option value="medium" selected>Medium</option>
                                 <option value="high">High</option>
