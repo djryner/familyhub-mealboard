@@ -21,6 +21,7 @@ from flask import (
     url_for,
     flash,
     jsonify,
+    current_app,
 )
 from sqlalchemy import text
 
@@ -257,25 +258,60 @@ def create_chore():
 @app.post("/chores/<string:chore_id>/complete", endpoint="complete_chore")
 def complete_chore_route(chore_id):
     """AJAX endpoint to mark a chore as complete. Used by dashboard cards."""
+    from models import ChoreOccurrence
     payload = request.get_json(silent=True) or {}
-    due_iso = payload.get("due_iso")
-    service_complete_chore(chore_id)
+    due_iso = payload.get("due_iso") or ""
+    user = payload.get("assigned_to")  # Optional
+    occ = ChoreOccurrence.query.get(chore_id)
+    if not occ:
+        current_app.logger.error(f"ChoreOccurrence not found for id={chore_id}")
+        return ("Occurrence not found", 404)
+    task_id = occ.task_id
+    from services.chores_service import complete_chore_occurrence
+    try:
+        post = complete_chore_occurrence(task_id, due_iso=due_iso)
+        post_due = post.get("due") if post else None
+        current_app.logger.info(f"complete: id={task_id} pre_due={due_iso} post_due={post_due}")
+        # Mark local occurrence as completed
+        occ.status = 'completed'
+        from datetime import datetime
+        occ.completed_at = datetime.utcnow()
+        # Insert next occurrence if recurring
+        meta = occ.chore_def
+        if meta and meta.recurrence:
+            from services.chores_service import _parse_rrule
+            next_due = _parse_rrule(meta.recurrence, occ.due_date)
+            if next_due:
+                exists = type(occ).query.filter_by(task_id=meta.task_id, due_date=next_due).first()
+                if not exists:
+                    new_occ = type(occ)()
+                    new_occ.task_id = meta.task_id
+                    new_occ.due_date = next_due
+                    new_occ.status = 'pending'
+                    from app import db
+                    db.session.add(new_occ)
+        from app import db
+        db.session.commit()
+    except Exception as e:
+        import traceback
+        current_app.logger.error(f"Error completing chore: id={task_id}, error={e}\n{traceback.format_exc()}")
+        return (f"Error completing chore: {str(e)}", 500)
 
-    settings = get_settings()
-    fallback = settings.points_default if getattr(settings, "points_default", None) is not None else 1
-
+    # Update local cache and award points idempotently
+    from db import db
     with db.engine.begin() as conn:
-        user = payload.get("assigned_to")
-        if not user:
-            meta = conn.execute(text("SELECT assigned_to FROM chore_metadata WHERE task_id=:id"), {"id": chore_id}).fetchone()
-            user = meta[0] if meta and meta[0] else None
-        pts = points_service.get_chore_points(conn, chore_id, fallback=fallback)
-        # Occurrence-safe points: only award once per (task_id, due_iso)
+        if post_due:
+            conn.execute(text("""
+                INSERT INTO chore_metadata(task_id, last_due_iso) VALUES(:id,:d)
+                ON CONFLICT(task_id) DO UPDATE SET last_due_iso=excluded.last_due_iso
+            """), {"id": chore_id, "d": post_due[:10]})
         if user and due_iso:
-            already = conn.execute(text("SELECT 1 FROM points_ledger WHERE user_name=:u AND task_id=:t AND kind='earn' AND occurred_at LIKE :d || '%'"), {"u": user, "t": chore_id, "d": due_iso}).fetchone()
-            if not already:
-                points_service.grant_points_for_completion(conn, user=user, task_id=chore_id, points=pts)
-
+            pts = points_service.get_chore_points(conn, chore_id, fallback=1)
+            occurrence_key = f"{chore_id}:{due_iso}"
+            conn.execute(text("""
+                INSERT OR IGNORE INTO points_ledger(user_name, task_id, points, kind, occurrence_key)
+                VALUES(:u, :t, :p, 'earn', :ok)
+            """), {"u": user, "t": chore_id, "p": pts, "ok": occurrence_key})
     return ("", 204)
 
 

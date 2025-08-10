@@ -14,6 +14,10 @@ from datetime import datetime, date, timedelta
 from typing import List, Optional
 from models import ChoreMetadata, ChoreOccurrence
 from db import db
+import logging
+from tasks_api import build_google_service, patch_task_status, get_task, TASK_LIST_ID
+
+logger = logging.getLogger("chores_service")
 
 def _parse_rrule(rrule: str, after: date) -> Optional[date]:
     """Given an RRULE string and a date, return the next due date after the given date."""
@@ -68,6 +72,9 @@ def fetch_chores(start: Optional[date]=None, end: Optional[date]=None, *, includ
     dtos = []
     for occ in results:
         meta = occ.chore_def
+        if meta is None:
+            # Orphaned occurrence, skip it
+            continue
         dtos.append(ChoreDTO(
             id=occ.id,
             title=meta.title,
@@ -80,9 +87,21 @@ def fetch_chores(start: Optional[date]=None, end: Optional[date]=None, *, includ
 
 def create_chore(title: str, assigned_to: Optional[str], due_date: date, points: int = 1, recurrence: Optional[str] = None) -> ChoreDTO:
     """Create a new recurring chore definition and its first occurrence."""
-    # Generate a unique task_id (could use uuid4 or slug)
-    import uuid
-    task_id = str(uuid.uuid4())
+    # Create the task in Google Tasks and use the returned id as task_id
+    from tasks_api import build_google_service, create_task, TASK_LIST_ID
+    import logging
+    logger = logging.getLogger("chores_service")
+    service = build_google_service()
+    due_rfc3339 = due_date.isoformat() + "T00:00:00Z"
+    notes = f"Assigned to: {assigned_to}" if assigned_to else None
+    task_body = {"title": title, "due": due_rfc3339}
+    if notes:
+        task_body["notes"] = notes
+    if recurrence:
+        task_body["recurrence"] = [recurrence] if not recurrence.startswith("RRULE:") else [recurrence]
+    google_task = service.tasks().insert(tasklist=TASK_LIST_ID, body=task_body).execute()
+    task_id = google_task["id"]
+    logger.info(f"create: title={title} due={due_rfc3339} recurrence={recurrence} returned_id={task_id}")
     meta = ChoreMetadata()
     meta.task_id = task_id
     meta.title = title
@@ -159,3 +178,24 @@ def auto_ignore_overdue():
                     new_occ.status = 'pending'
                     db.session.add(new_occ)
     db.session.commit()
+
+def complete_chore_occurrence(task_id: str, due_iso: str = None):
+    """Mark only the current occurrence as complete in Google Tasks, log, and refetch."""
+    service = build_google_service()
+    list_id = TASK_LIST_ID
+    # Warn if task_id looks like a fake UUID (not a Google Task ID)
+    import re
+    if re.fullmatch(r"[0-9a-fA-F\-]{36}", task_id):
+        logger.warning(f"Task ID {task_id} looks like a local UUID, not a Google Task ID. This will fail with Google Tasks API.")
+    # 1. Fetch pre-patch task
+    pre = get_task(service, list_id, task_id)
+    pre_due = pre.get("due")
+    # 2. Patch status to completed
+    from datetime import datetime, timezone
+    now_iso = datetime.now(timezone.utc).isoformat()
+    patch_task_status(service, list_id, task_id, status="completed", completed_iso=now_iso)
+    # 3. Refetch task
+    post = get_task(service, list_id, task_id)
+    post_due = post.get("due")
+    logger.info(f"complete: id={task_id} pre_due={pre_due} post_due={post_due}")
+    return post

@@ -169,7 +169,7 @@
     <div class="card-body">
     {% set any_today = namespace(value=false) %}
     {% for chore in chores %}
-        {% if chore.due_date and chore.due_date == today %}
+        {% if chore.due_date and chore.due_date == today and not chore.completed and chore.status != 'ignored' %}
             {% set any_today.value = true %}
             <div class="chore-card {% if chore.completed %}completed{% endif %}" id="chore-{{ chore.id }}">
                 <div class="chore-info">

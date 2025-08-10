@@ -114,3 +114,20 @@ def get_or_create_task_list(service, list_title: str = "Family chores") -> str:
     created = service.tasklists().insert(body={"title": list_title}).execute()
     logger.info("Created task list '%s' (%s)", created["title"], created["id"])
     return created["id"]
+
+
+def patch_task_status(service, task_list_id: str, task_id: str, status: str = "completed", completed_iso: str = None):
+    """Patch a Google Task's status (occurrence only)."""
+    from datetime import datetime, timezone
+    now_iso = datetime.now(timezone.utc).isoformat()
+    patch_body = {"status": status, "completed": completed_iso or now_iso}
+    logger.info(f"patch_task_status: id={task_id} patch_body={patch_body}")
+    result = service.tasks().patch(tasklist=task_list_id, task=task_id, body=patch_body).execute()
+    logger.info(f"patch_task_status: id={task_id} patch_result={result}")
+    return result
+
+
+def get_task(service, task_list_id: str, task_id: str):
+    """Fetch a single Google Task by id."""
+    logger.info(f"get_task: id={task_id}")
+    return service.tasks().get(tasklist=task_list_id, task=task_id).execute()

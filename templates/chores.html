@@ -83,12 +83,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ due_iso: due })
             }).then(resp => {
-                if (!resp.ok) throw new Error('Request failed');
+                if (!resp.ok) {
+                    // Only show error if card is still present
+                    if (btn.closest('.card')) {
+                        showToast('Unable to mark chore complete. Please try again.', 'error');
+                    }
+                    return;
+                }
                 btn.textContent = 'Completed';
                 btn.disabled = true;
                 btn.closest('.card').classList.add('border-success', 'bg-light');
             }).catch(err => {
-                alert('Sorry, could not complete the chore.');
+                if (btn.closest('.card')) {
+                    showToast('Unable to mark chore complete. Please try again.', 'error');
+                }
             });
         });
     });
