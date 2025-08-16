@@ -1,3 +1,6 @@
+import time
+import psutil
+import subprocess
 import json
 import threading
 from datetime import datetime, timezone
@@ -8,14 +11,48 @@ from health.health_check import liveness_check, readiness_check
 
 
 def _json_response(check_fn: Callable[[], Any]) -> tuple[str, int]:
+
+def ensure_chromium_kiosk():
+    kiosk_url = "http://localhost:5000"
+    kiosk_args = [
+        "chromium-browser",
+        "--noerrdialogs",
+        "--disable-infobars",
+        "--kiosk",
+        "--user-data-dir=/home/familyhub/.config/chromium-kiosk",
+        kiosk_url
+    ]
+    for proc in psutil.process_iter(['name', 'cmdline']):
+        try:
+            if proc.info['name'] and 'chromium' in proc.info['name']:
+                if kiosk_url in ' '.join(proc.info['cmdline']):
+                    return True  # Already running
+        except Exception:
+            continue
+    # Not running, launch it
+    subprocess.Popen(kiosk_args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return False  # Was not running, now launched
+    # Wait 60 seconds after startup before health checks
+    if not hasattr(liveness_check, "_startup_time"):
+        liveness_check._startup_time = time.time()
+    if time.time() - liveness_check._startup_time < 60:
+        payload = {
+            "status": "waiting",
+            "checks": "Startup delay for health checks",
+            "ts": datetime.now(timezone.utc).isoformat(),
+        }
+        return json.dumps(payload), 200
+    # Ensure Chromium kiosk is running
+    browser_ok = ensure_chromium_kiosk()
     ok, details = check_fn()
-    status = "ok" if ok else "fail"
+    status = "ok" if ok and browser_ok else "fail"
     payload = {
         "status": status,
         "checks": details,
+        "browser": "ok" if browser_ok else "restarted",
         "ts": datetime.now(timezone.utc).isoformat(),
     }
-    return json.dumps(payload), 200 if ok else 503
+    return json.dumps(payload), 200 if ok and browser_ok else 503
 
 
 def _register_flask(app, host: str, port: int) -> None:
