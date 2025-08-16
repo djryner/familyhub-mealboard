@@ -1,9 +1,21 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+# Ensure familyhub user exists
+if ! id -u familyhub >/dev/null 2>&1; then
+  echo "Creating familyhub service user..."
+  sudo adduser --system --group --home /home/familyhub familyhub
+fi
+
 # Sync code from repo to deployment directory
 echo "Syncing code to $APP_DIR..."
 sudo rsync -a --delete /repo/familyhub-mealboard/ "$APP_DIR/"
-sudo chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+sudo chown -R familyhub:familyhub "$APP_DIR"
+
+# Ensure service_account.json is owned by familyhub and has correct permissions
+if [[ -f "/etc/familyhub/service_account.json" ]]; then
+  sudo chown familyhub:familyhub /etc/familyhub/service_account.json
+  sudo chmod 640 /etc/familyhub/service_account.json
+fi
 
 APP_NAME=${APP_NAME:-familyhub}
 APP_USER=${APP_USER:-pi}
@@ -159,4 +171,21 @@ if [[ "$DRY_RUN" != 1 ]]; then
 fi
 
 success "Setup complete"
+success "Setup complete"
+
+# Enable service to start on boot
+sudo systemctl enable familyhub.service
+
+# Create autostart for Chromium in kiosk mode (if not already present)
+KIOSK_URL="http://localhost:5000" # Change if your app uses a different port
+AUTOSTART_DIR="/home/familyhub/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
+cat > "$AUTOSTART_DIR/familyhub-kiosk.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=FamilyHub Kiosk
+Exec=chromium-browser --noerrdialogs --disable-infobars --kiosk $KIOSK_URL
+X-GNOME-Autostart-enabled=true
+EOF
+chown -R familyhub:familyhub "$AUTOSTART_DIR"
 info "Re-run this script anytime: sudo bash scripts/setup_pi.sh"
