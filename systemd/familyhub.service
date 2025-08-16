@@ -8,7 +8,7 @@ Type=simple
 # To enable sdnotify/watchdog later, switch to:
 # Type=notify
 # WatchdogSec=30s
-User=pi
+User=familyhub
 WorkingDirectory=/home/pi/familyhub
 EnvironmentFile=/etc/default/familyhub
 ExecStart=/home/pi/familyhub/.venv/bin/python /home/pi/familyhub/main.py
