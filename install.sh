@@ -28,3 +28,19 @@ echo 'Service installed. Test with:'
 echo '  systemctl status familyhub'
 echo '  journalctl -u familyhub -e -f'
 echo '  curl -f http://127.0.0.1:8000/healthz || curl -f http://127.0.0.1:8030/healthz'
+
+# Create Chromium kiosk autostart .desktop file for familyhub user (at end, using HOST/PORT from /etc/default/familyhub)
+HOST=$(grep '^HOST=' /etc/default/familyhub | cut -d'=' -f2)
+PORT=$(grep '^PORT=' /etc/default/familyhub | cut -d'=' -f2)
+KIOSK_URL="http://${HOST}:${PORT}"
+AUTOSTART_DIR="/home/familyhub/.config/autostart"
+sudo -u familyhub mkdir -p "$AUTOSTART_DIR"
+cat > /tmp/familyhub-kiosk.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=FamilyHub Kiosk
+Exec=chromium-browser --noerrdialogs --disable-infobars --kiosk $KIOSK_URL
+X-GNOME-Autostart-enabled=true
+EOF
+sudo mv /tmp/familyhub-kiosk.desktop "$AUTOSTART_DIR/familyhub-kiosk.desktop"
+sudo chown familyhub:familyhub "$AUTOSTART_DIR/familyhub-kiosk.desktop"
