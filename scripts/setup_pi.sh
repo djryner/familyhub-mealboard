@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 # Sync code from repo to deployment directory
-echo "Syncing code to /home/pi/familyhub..."
-sudo rsync -a --delete /repo/familyhub-mealboard/ /home/pi/familyhub/
-sudo chown -R pi:pi /home/pi/familyhub
+echo "Syncing code to $APP_DIR..."
+sudo rsync -a --delete /repo/familyhub-mealboard/ "$APP_DIR/"
+sudo chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 APP_NAME=${APP_NAME:-familyhub}
 APP_USER=${APP_USER:-pi}
