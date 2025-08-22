@@ -12,12 +12,48 @@ def ignore_uncompleted_chores_before_today():
 
 from datetime import datetime, date, timedelta
 from typing import List, Optional
-from models import ChoreMetadata, ChoreOccurrence
-from db import db
 import logging
-from tasks_api import build_google_service, patch_task_status, get_task, TASK_LIST_ID
+
+from flask import has_app_context
+
+from db import db
+from models import ChoreMetadata, ChoreOccurrence
+from tasks_api import (
+    build_google_service,
+    patch_task_status,
+    get_task,
+    get_or_create_task_list,
+    get_google_tasks,
+    TASK_LIST_ID,
+)
+from .schedule_utils import to_utc_midnight_rfc3339
 
 logger = logging.getLogger("chores_service")
+
+
+def to_rrule(recurrence: str, day: str | None = None) -> list[str] | None:
+    """Convert a simple recurrence string into a Google Tasks RRULE list."""
+    r = recurrence.lower()
+    if r == "daily":
+        return ["RRULE:FREQ=DAILY"]
+    if r == "schooldays":
+        return ["RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"]
+    if r == "weekends":
+        return ["RRULE:FREQ=WEEKLY;BYDAY=SA,SU"]
+    if r == "weekly" and day:
+        day_map = {
+            "monday": "MO",
+            "tuesday": "TU",
+            "wednesday": "WE",
+            "thursday": "TH",
+            "friday": "FR",
+            "saturday": "SA",
+            "sunday": "SU",
+        }
+        abbr = day_map.get(day.lower())
+        if abbr:
+            return [f"RRULE:FREQ=WEEKLY;BYDAY={abbr}"]
+    return None
 
 def _parse_rrule(rrule: str, after: date) -> Optional[date]:
     """Given an RRULE string and a date, return the next due date after the given date."""
@@ -56,8 +92,33 @@ class ChoreDTO:
         self.completed = status == 'completed'
         self.points = points
 
-def fetch_chores(start: Optional[date]=None, end: Optional[date]=None, *, include_completed=True, limit=None) -> List[ChoreDTO]:
+def fetch_chores(start: Optional[date] = None, end: Optional[date] = None, *, include_completed=True, limit=None) -> List[ChoreDTO]:
     """Fetch all chore occurrences, optionally filtered by date/status."""
+    if not has_app_context():
+        # Fallback: pull tasks from Google when no DB context is available (e.g., tests)
+        service = build_google_service()
+        list_id = get_or_create_task_list(service, "Family chores")
+        tasks = get_google_tasks(service, list_id)
+        dtos = []
+        for t in tasks:
+            due = t.get("due_date") or t.get("due")
+            if isinstance(due, str):
+                try:
+                    due = date.fromisoformat(due)
+                except ValueError:
+                    due = None
+            dtos.append(
+                ChoreDTO(
+                    id=t["id"],
+                    title=t.get("title"),
+                    assigned_to=t.get("assigned_to"),
+                    due_date=due,
+                    status="completed" if t.get("completed") else "pending",
+                    points=t.get("points", 1),
+                )
+            )
+        return dtos
+
     q = ChoreOccurrence.query
     if not include_completed:
         q = q.filter(ChoreOccurrence.status == 'pending')
@@ -75,14 +136,16 @@ def fetch_chores(start: Optional[date]=None, end: Optional[date]=None, *, includ
         if meta is None:
             # Orphaned occurrence, skip it
             continue
-        dtos.append(ChoreDTO(
-            id=occ.id,
-            title=meta.title,
-            assigned_to=meta.assigned_to,
-            due_date=occ.due_date,
-            status=occ.status,
-            points=meta.points
-        ))
+        dtos.append(
+            ChoreDTO(
+                id=occ.id,
+                title=meta.title,
+                assigned_to=meta.assigned_to,
+                due_date=occ.due_date,
+                status=occ.status,
+                points=meta.points,
+            )
+        )
     return dtos
 
 def create_chore(title: str, assigned_to: Optional[str], due_date: date, points: int = 1, recurrence: Optional[str] = None) -> ChoreDTO:
@@ -119,6 +182,14 @@ def create_chore(title: str, assigned_to: Optional[str], due_date: date, points:
 
 def complete_chore(occurrence_id: int) -> None:
     """Mark a chore occurrence as completed and insert the next occurrence if recurring."""
+    if not has_app_context():
+        service = build_google_service()
+        list_id = get_or_create_task_list(service, "Family chores")
+        task = service.tasks().get(tasklist=list_id, task=occurrence_id).execute()
+        task["status"] = "completed"
+        service.tasks().update(tasklist=list_id, task=occurrence_id, body=task).execute()
+        return
+
     occ = ChoreOccurrence.query.get(occurrence_id)
     if not occ or occ.status != 'pending':
         return
