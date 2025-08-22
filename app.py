@@ -70,7 +70,14 @@ if not settings:  # pragma: no cover safety check
 import os as _os
 
 if not _os.environ.get("SKIP_ROUTES"):
+    from kiosk import bp as kiosk_bp
+    from admin import bp as admin_bp
+    from api import bp as api_bp
     from rewards.routes import bp as rewards_bp
+
+    app.register_blueprint(kiosk_bp, name="")
+    app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(rewards_bp, url_prefix="/rewards")
 
 if __name__ == "__main__":  # pragma: no cover
