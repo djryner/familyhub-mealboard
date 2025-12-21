@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FamilyHub Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/nav', { pointsEnabled }) %>
+
+  <main class="container">
+    <%- include('partials/messages') %>
+
+    <h1>Family Dashboard</h1>
+
+    <!-- Chores Today -->
+    <section class="card">
+      <h2>📋 Chores Today</h2>
+      <% if (choresToday.length === 0) { %>
+        <p>No chores due today! 🎉</p>
+      <% } else { %>
+        <ul class="chore-list">
+          <% choresToday.forEach(chore => { %>
+            <li class="chore-item <%= chore.completed ? 'completed' : '' %>">
+              <div class="chore-info">
+                <strong><%= chore.title %></strong>
+                <% if (chore.assignedTo) { %>
+                  <span class="assigned">👤 <%= chore.assignedTo %></span>
+                <% } %>
+                <span class="points">⭐ <%= chore.points %> pts</span>
+              </div>
+              <% if (!chore.completed) { %>
+                <div class="chore-actions">
+                  <form method="POST" action="/chores/<%= chore.id %>/complete" style="display: inline;">
+                    <button type="submit" class="btn btn-success">✓ Complete</button>
+                  </form>
+                  <form method="POST" action="/chores/<%= chore.id %>/ignore" style="display: inline;">
+                    <button type="submit" class="btn btn-warning">Skip</button>
+                  </form>
+                </div>
+              <% } else { %>
+                <span class="status-badge">✅ Done</span>
+              <% } %>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <a href="/chores" class="btn btn-primary">View All Chores →</a>
+    </section>
+
+    <!-- Meals This Week -->
+    <section class="card">
+      <h2>🍽️ Meals This Week</h2>
+      <% if (meals.length === 0) { %>
+        <p>No meals planned yet.</p>
+      <% } else { %>
+        <ul class="meal-list">
+          <% meals.forEach(meal => { %>
+            <li class="meal-item">
+              <span class="meal-date"><%= meal.date %></span>
+              <strong><%= meal.title %></strong>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <a href="/meal-plans" class="btn btn-primary">View Full Meal Plan →</a>
+    </section>
+
+    <!-- Leaderboard -->
+    <% if (pointsEnabled && leaderboard.length > 0) { %>
+      <section class="card">
+        <h2>🏆 Points Leaderboard</h2>
+        <ol class="leaderboard">
+          <% leaderboard.forEach(user => { %>
+            <li class="leaderboard-item">
+              <% if (user.image_url) { %>
+                <img src="<%= user.image_url %>" alt="<%= user.name %>" class="leaderboard-avatar">
+              <% } else { %>
+                <span class="leaderboard-avatar-placeholder"><%= user.avatar || '👤' %></span>
+              <% } %>
+              <span class="user-name"><%= user.name %></span>
+              <span class="user-points"><%= user.balance %> pts</span>
+            </li>
+          <% }); %>
+        </ol>
+      </section>
+    <% } %>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

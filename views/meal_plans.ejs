@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Plans - FamilyHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/nav') %>
+
+  <main class="container">
+    <%- include('partials/messages') %>
+
+    <div class="page-header">
+      <h1>🍽️ Meal Plans</h1>
+      <a href="/meals/create" class="btn btn-primary">➕ Add Meal</a>
+    </div>
+
+    <% if (meals.length === 0) { %>
+      <div class="card">
+        <p>No meals planned yet.</p>
+        <a href="/meals/create" class="btn btn-primary">Add your first meal →</a>
+      </div>
+    <% } else { %>
+      <div class="meals-grid">
+        <% meals.forEach(meal => { %>
+          <div class="meal-card">
+            <div class="meal-header">
+              <h3><%= meal.title %></h3>
+              <form method="POST" action="/meals/<%= meal.id %>/delete" style="display: inline;">
+                <button type="submit" class="btn-delete" onclick="return confirm('Delete this meal?')">🗑️</button>
+              </form>
+            </div>
+            <p class="meal-date">📅 <%= meal.date %></p>
+            <% if (meal.mealType) { %>
+              <p class="meal-type"><%= meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1) %></p>
+            <% } %>
+            <% if (meal.description) { %>
+              <p class="meal-description"><%= meal.description %></p>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

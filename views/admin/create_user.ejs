@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Add User - Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <h1>➕ Add New User</h1>
+
+    <div class="admin-form-card">
+      <form method="POST" action="/admin/users/create" enctype="multipart/form-data" class="admin-form">
+        <div class="form-group">
+          <label for="name">Name *</label>
+          <input type="text" id="name" name="name" required placeholder="e.g., John Doe" class="mobile-input">
+        </div>
+
+        <div class="form-group">
+          <label for="userImage">Profile Picture</label>
+          <div class="image-upload-container">
+            <div class="image-preview" id="imagePreview">
+              <span class="preview-placeholder">👤</span>
+            </div>
+            <input type="file" id="userImage" name="userImage" accept="image/*" class="mobile-input file-input" onchange="previewImage(event)">
+            <p class="help-text">Upload a photo (JPEG, PNG, GIF, or WebP, max 5MB)</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="isParent" name="isParent" value="1">
+            <span>Parent (has admin privileges)</span>
+          </label>
+        </div>
+
+        <div class="form-actions mobile-actions">
+          <button type="submit" class="btn btn-primary mobile-btn">Create User</button>
+          <a href="/admin/users" class="btn btn-secondary mobile-btn">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    function previewImage(event) {
+      const preview = document.getElementById('imagePreview');
+      const file = event.target.files[0];
+      
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.innerHTML = '<span class="preview-placeholder">👤</span>';
+      }
+    }
+  </script>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

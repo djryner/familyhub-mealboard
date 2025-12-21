@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chores - FamilyHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/nav') %>
+
+  <main class="container">
+    <%- include('partials/messages') %>
+
+    <h1>📋 Chores</h1>
+
+    <% if (chores.length === 0) { %>
+      <p>No upcoming chores! 🎉</p>
+    <% } else { %>
+      <div class="chores-grid">
+        <% chores.forEach(chore => { %>
+          <div class="chore-card">
+            <h3><%= chore.title %></h3>
+            <p class="chore-meta">
+              <span class="due-date">📅 <%= chore.dueDate %></span>
+              <% if (chore.assignedTo) { %>
+                <span class="assigned">👤 <%= chore.assignedTo %></span>
+              <% } %>
+              <span class="points">⭐ <%= chore.points %> pts</span>
+            </p>
+            <div class="chore-actions">
+              <form method="POST" action="/chores/<%= chore.id %>/complete">
+                <button type="submit" class="btn btn-success">✓ Complete</button>
+              </form>
+              <form method="POST" action="/chores/<%= chore.id %>/ignore">
+                <button type="submit" class="btn btn-warning">Skip</button>
+              </form>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rewards - FamilyHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('../partials/nav', { pointsEnabled: true }) %>
+
+  <main class="container">
+    <%- include('../partials/messages') %>
+
+    <h1>🎁 Rewards Catalog</h1>
+
+    <!-- Leaderboard -->
+    <section class="card">
+      <h2>🏆 Points Leaderboard</h2>
+      <% if (leaderboard.length === 0) { %>
+        <p>No users found. Add users to the database first.</p>
+      <% } else { %>
+        <ol class="leaderboard">
+          <% leaderboard.forEach(user => { %>
+            <li>
+              <span class="user-name">
+                <% if (user.avatar) { %><%= user.avatar %><% } %>
+                <%= user.name %>
+              </span>
+              <span class="user-points"><%= user.balance %> pts</span>
+            </li>
+          <% }); %>
+        </ol>
+      <% } %>
+    </section>
+
+    <!-- Rewards Grid -->
+    <section class="card">
+      <h2>Available Rewards</h2>
+      <% if (rewards.length === 0) { %>
+        <p>No rewards available yet.</p>
+      <% } else { %>
+        <div class="rewards-grid">
+          <% rewards.forEach(reward => { %>
+            <div class="reward-card">
+              <div class="reward-emoji"><%= reward.emoji || '🎁' %></div>
+              <h3><%= reward.title %></h3>
+              <p class="reward-cost">💰 <%= reward.cost_points %> points</p>
+              
+              <form method="POST" action="/rewards/redeem" class="reward-form">
+                <input type="hidden" name="rewardId" value="<%= reward.id %>">
+                <select name="userName" required>
+                  <option value="">Select person...</option>
+                  <% users.forEach(user => { %>
+                    <option value="<%= user.name %>"><%= user.name %></option>
+                  <% }); %>
+                </select>
+                <button type="submit" class="btn btn-primary">Redeem</button>
+              </form>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </section>
+
+    <p><a href="/rewards/history" class="btn btn-primary">View Redemption History →</a></p>
+  </main>
+
+  <%- include('../partials/footer') %>
+  
+  <style>
+    .rewards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    
+    .reward-card {
+      background: white;
+      border: 2px solid #ecf0f1;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .reward-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .reward-emoji {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .reward-cost {
+      color: #3498db;
+      font-weight: bold;
+      margin: 0.5rem 0;
+    }
+    
+    .reward-form {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .reward-form select {
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</body>
+</html>

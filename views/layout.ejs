@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'FamilyHub' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand">🏠 FamilyHub</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/chores">Chores</a></li>
+        <li><a href="/meal-plans">Meals</a></li>
+        <% if (typeof pointsEnabled !== 'undefined' && pointsEnabled) { %>
+          <li><a href="/rewards">Rewards</a></li>
+        <% } %>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <% if (typeof messages !== 'undefined' && messages.length > 0) { %>
+      <div class="messages">
+        <% messages.forEach(msg => { %>
+          <div class="alert alert-<%= msg.type %>">
+            <%= msg.message %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <%- body %>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; <%= new Date().getFullYear() %> FamilyHub</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redemption History - FamilyHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('../partials/nav', { pointsEnabled: true }) %>
+
+  <main class="container">
+    <%- include('../partials/messages') %>
+
+    <h1>📜 Redemption History</h1>
+
+    <% if (history.length === 0) { %>
+      <p>No redemptions yet.</p>
+    <% } else { %>
+      <div class="card">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Person</th>
+              <th>Reward</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% history.forEach(item => { %>
+              <tr>
+                <td><%= new Date(item.redeemed_at).toLocaleDateString() %></td>
+                <td><%= item.user_name %></td>
+                <td><%= item.reward_title %></td>
+                <td class="points-spent">-<%= item.points_spent %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
+    <p><a href="/rewards" class="btn btn-primary">← Back to Rewards</a></p>
+  </main>
+
+  <%- include('../partials/footer') %>
+  
+  <style>
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .history-table th,
+    .history-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    
+    .history-table th {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
+    
+    .points-spent {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+  </style>
+</body>
+</html>

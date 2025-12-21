@@ -1,0 +1,14 @@
+<nav class="navbar">
+  <div class="container">
+    <a href="/" class="nav-brand">🏠 FamilyHub</a>
+    <ul class="nav-links">
+      <li><a href="/">Dashboard</a></li>
+      <li><a href="/chores">Chores</a></li>
+      <li><a href="/meal-plans">Meals</a></li>
+      <% if (typeof pointsEnabled !== 'undefined' && pointsEnabled) { %>
+        <li><a href="/rewards">Rewards</a></li>
+      <% } %>
+      <li><a href="/admin" class="nav-admin">⚙️ Admin</a></li>
+    </ul>
+  </div>
+</nav>

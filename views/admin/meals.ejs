@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Manage Meals - Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <div class="admin-header">
+      <h1>🍽️ Manage Meals</h1>
+      <a href="/admin/meals/create" class="btn btn-primary mobile-btn">➕ Add Meal</a>
+    </div>
+
+    <% if (meals.length === 0) { %>
+      <div class="card">
+        <p>No meals yet.</p>
+        <a href="/admin/meals/create" class="btn btn-primary">Add your first meal</a>
+      </div>
+    <% } else { %>
+      <div class="admin-list">
+        <% meals.forEach(meal => { %>
+          <div class="admin-list-item">
+            <div class="item-info">
+              <div class="item-title"><%= meal.title %></div>
+              <div class="item-meta">
+                📅 <%= meal.date %>
+                <% if (meal.meal_type) { %>
+                  • <%= meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1) %>
+                <% } %>
+              </div>
+              <% if (meal.description) { %>
+                <div class="item-desc"><%= meal.description %></div>
+              <% } %>
+            </div>
+            <div class="item-actions">
+              <a href="/admin/meals/<%= meal.id %>/edit" class="btn btn-small btn-secondary mobile-btn">✏️ Edit</a>
+              <a href="/admin/meals/<%= meal.id %>/delete-confirm" class="btn btn-small btn-danger mobile-btn">🗑️ Delete</a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="admin-footer-actions">
+      <a href="/admin" class="btn btn-secondary mobile-btn">← Back to Admin</a>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

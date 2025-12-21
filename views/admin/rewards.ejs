@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Manage Rewards - Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <div class="admin-header">
+      <h1>🎁 Manage Rewards</h1>
+      <a href="/admin/rewards/create" class="btn btn-primary mobile-btn">➕ Add Reward</a>
+    </div>
+
+    <% if (rewards.length === 0) { %>
+      <div class="card">
+        <p>No rewards yet.</p>
+        <a href="/admin/rewards/create" class="btn btn-primary">Add your first reward</a>
+      </div>
+    <% } else { %>
+      <div class="admin-list">
+        <% rewards.forEach(reward => { %>
+          <div class="admin-list-item <%= reward.active ? '' : 'inactive' %>">
+            <div class="item-info">
+              <div class="item-title">
+                <%= reward.title %>
+                <% if (!reward.active) { %>
+                  <span class="badge badge-inactive">Inactive</span>
+                <% } %>
+              </div>
+              <div class="item-meta">
+                💰 <%= reward.cost_points %> points
+              </div>
+              <% if (reward.description) { %>
+                <div class="item-desc"><%= reward.description %></div>
+              <% } %>
+            </div>
+            <div class="item-actions">
+              <form method="POST" action="/admin/rewards/<%= reward.id %>/toggle" style="display: inline;">
+                <button type="submit" class="btn btn-small btn-secondary mobile-btn">
+                  <%= reward.active ? '🚫 Deactivate' : '✅ Activate' %>
+                </button>
+              </form>
+              <a href="/admin/rewards/<%= reward.id %>/delete-confirm" class="btn btn-small btn-danger mobile-btn">🗑️ Delete</a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="admin-footer-actions">
+      <a href="/admin" class="btn btn-secondary mobile-btn">← Back to Admin</a>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

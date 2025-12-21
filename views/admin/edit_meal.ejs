@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Edit Meal - Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <h1>✏️ Edit Meal</h1>
+
+    <div class="admin-form-card">
+      <form method="POST" action="/admin/meals/<%= meal.id %>/edit" class="admin-form">
+        <div class="form-group">
+          <label for="title">Meal Title *</label>
+          <input type="text" id="title" name="title" required value="<%= meal.title %>" class="mobile-input">
+        </div>
+
+        <div class="form-group">
+          <label for="date">Date *</label>
+          <input type="date" id="date" name="date" required value="<%= meal.date %>" class="mobile-input">
+        </div>
+
+        <div class="form-group">
+          <label for="mealType">Meal Type</label>
+          <select id="mealType" name="mealType" class="mobile-input">
+            <option value="breakfast" <%= meal.meal_type === 'breakfast' ? 'selected' : '' %>>Breakfast</option>
+            <option value="lunch" <%= meal.meal_type === 'lunch' ? 'selected' : '' %>>Lunch</option>
+            <option value="dinner" <%= meal.meal_type === 'dinner' ? 'selected' : '' %>>Dinner</option>
+            <option value="snack" <%= meal.meal_type === 'snack' ? 'selected' : '' %>>Snack</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description (optional)</label>
+          <textarea id="description" name="description" rows="4" class="mobile-input"><%= meal.description || '' %></textarea>
+        </div>
+
+        <div class="form-actions mobile-actions">
+          <button type="submit" class="btn btn-primary mobile-btn">Save Changes</button>
+          <a href="/admin/meals" class="btn btn-secondary mobile-btn">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

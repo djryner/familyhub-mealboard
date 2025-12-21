@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Manage Chores - Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <div class="admin-header">
+      <h1>📋 Manage Chore Templates</h1>
+      <a href="/admin/chores/create" class="btn btn-primary mobile-btn">➕ Add Template</a>
+    </div>
+
+    <% if (templates.length === 0) { %>
+      <div class="card">
+        <p>No chore templates yet.</p>
+        <a href="/admin/chores/create" class="btn btn-primary">Add your first template</a>
+      </div>
+    <% } else { %>
+      <div class="admin-list">
+        <% templates.forEach(template => { %>
+          <div class="admin-list-item">
+            <div class="item-info">
+              <div class="item-title"><%= template.title %></div>
+              <div class="item-meta">
+                ⭐ <%= template.points %> points
+                <% if (template.category) { %>
+                  • <%= template.category %>
+                <% } %>
+              </div>
+              <% if (template.description) { %>
+                <div class="item-desc"><%= template.description %></div>
+              <% } %>
+            </div>
+            <div class="item-actions">
+              <a href="/admin/chores/<%= template.id %>/delete-confirm" class="btn btn-small btn-danger mobile-btn">🗑️ Delete</a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="admin-footer-actions">
+      <a href="/admin" class="btn btn-secondary mobile-btn">← Back to Admin</a>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

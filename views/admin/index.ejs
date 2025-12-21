@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Dashboard - FamilyHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <h1>⚙️ Admin Dashboard</h1>
+
+    <!-- QR Code for Mobile Access (Desktop only) -->
+    <% if (qrCodeDataUrl) { %>
+      <div class="qr-code-section desktop-only">
+        <div class="qr-code-card">
+          <div class="qr-code-header">
+            <h3>📱 Scan to Open on Mobile</h3>
+            <p>Use your phone's camera to scan this QR code and manage FamilyHub from anywhere on your network</p>
+          </div>
+          <div class="qr-code-image">
+            <img src="<%= qrCodeDataUrl %>" alt="QR Code for Admin Access" />
+          </div>
+          <div class="qr-code-url">
+            <code><%= localAdminUrl %></code>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Quick Stats -->
+    <div class="admin-stats">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value"><%= stats.users %></div>
+        <div class="stat-label">Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div class="stat-value"><%= stats.chores %></div>
+        <div class="stat-label">Pending Chores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🍽️</div>
+        <div class="stat-value"><%= stats.meals %></div>
+        <div class="stat-label">Upcoming Meals</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎁</div>
+        <div class="stat-value"><%= stats.rewards %></div>
+        <div class="stat-label">Active Rewards</div>
+      </div>
+    </div>
+
+    <!-- Management Links -->
+    <div class="admin-sections">
+      <a href="/admin/users" class="admin-section-card">
+        <div class="section-icon">👥</div>
+        <div class="section-title">Manage Users</div>
+        <div class="section-desc">Add, edit, or remove family members</div>
+      </a>
+
+      <a href="/admin/meals" class="admin-section-card">
+        <div class="section-icon">🍽️</div>
+        <div class="section-title">Manage Meals</div>
+        <div class="section-desc">Plan meals for the week</div>
+      </a>
+
+      <a href="/admin/chores" class="admin-section-card">
+        <div class="section-icon">📋</div>
+        <div class="section-title">Manage Chores</div>
+        <div class="section-desc">Create chore templates and definitions</div>
+      </a>
+
+      <a href="/admin/rewards" class="admin-section-card">
+        <div class="section-icon">🎁</div>
+        <div class="section-title">Manage Rewards</div>
+        <div class="section-desc">Add or edit rewards catalog</div>
+      </a>
+    </div>
+
+    <!-- Recent Activity -->
+    <% if (recentMeals.length > 0 || recentChores.length > 0) { %>
+      <div class="admin-recent">
+        <h2>Recent Activity</h2>
+        
+        <% if (recentMeals.length > 0) { %>
+          <div class="recent-section">
+            <h3>Recent Meals</h3>
+            <ul class="recent-list">
+              <% recentMeals.forEach(meal => { %>
+                <li><%= meal.title %> - <%= meal.date %></li>
+              <% }); %>
+            </ul>
+          </div>
+        <% } %>
+
+        <% if (recentRedemptions.length > 0) { %>
+          <div class="recent-section">
+            <h3>Recent Redemptions</h3>
+            <ul class="recent-list">
+              <% recentRedemptions.forEach(redemption => { %>
+                <li><%= redemption.user_name %> redeemed <%= redemption.reward_title %></li>
+              <% }); %>
+            </ul>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>
