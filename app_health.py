@@ -10,9 +10,8 @@ from typing import Any, Callable, Optional
 from health.health_check import liveness_check, readiness_check
 
 
-def _json_response(check_fn: Callable[[], Any]) -> tuple[str, int]:
-
-def ensure_chromium_kiosk():
+def ensure_chromium_kiosk() -> bool:
+    """Ensure the Chromium kiosk browser is running."""
     kiosk_url = "http://localhost:5000"
     kiosk_args = [
         "chromium-browser",
@@ -20,18 +19,21 @@ def ensure_chromium_kiosk():
         "--disable-infobars",
         "--kiosk",
         "--user-data-dir=/home/familyhub/.config/chromium-kiosk",
-        kiosk_url
+        kiosk_url,
     ]
-    for proc in psutil.process_iter(['name', 'cmdline']):
+    for proc in psutil.process_iter(["name", "cmdline"]):
         try:
-            if proc.info['name'] and 'chromium' in proc.info['name']:
-                if kiosk_url in ' '.join(proc.info['cmdline']):
+            if proc.info["name"] and "chromium" in proc.info["name"]:
+                if kiosk_url in " ".join(proc.info["cmdline"]):
                     return True  # Already running
         except Exception:
             continue
     # Not running, launch it
     subprocess.Popen(kiosk_args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return False  # Was not running, now launched
+
+
+def _json_response(check_fn: Callable[[], Any]) -> tuple[str, int]:
     # Wait 60 seconds after startup before health checks
     if not hasattr(liveness_check, "_startup_time"):
         liveness_check._startup_time = time.time()
