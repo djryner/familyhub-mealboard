@@ -4,6 +4,7 @@ import { MealsService } from '../services/meals.js';
 import { PointsService } from '../services/points.js';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
+import { getDb } from '../db/init.js';
 
 const router = express.Router();
 
@@ -22,17 +23,40 @@ router.get('/', (req, res) => {
       includeCompleted: true,
     });
     
-    // Fetch meals for next 7 days
+    // Fetch meals for next 5 days (current day + 4)
     const meals = MealsService.fetchMeals(today, endDate);
     
     // Get leaderboard if points enabled
     const leaderboard = config.pointsEnabled ? PointsService.getLeaderboard() : [];
     
+    // Get all users
+    const db = getDb();
+    const allUsers = db.prepare('SELECT * FROM users ORDER BY name').all();
+    
+    // Build user data with their chores and points
+    const usersWithChores = allUsers.map(user => {
+      // Get user's chores for today
+      const userChores = choresToday.filter(chore => chore.assignedTo === user.name);
+      
+      // Get user's points balance from leaderboard
+      let balance = 0;
+      if (config.pointsEnabled) {
+        const userInLeaderboard = leaderboard.find(u => u.name === user.name);
+        balance = userInLeaderboard ? userInLeaderboard.balance : 0;
+      }
+      
+      return {
+        ...user,
+        chores: userChores,
+        balance: balance
+      };
+    });
+    
     res.render('index', {
-      choresToday,
-      meals: meals.slice(0, 7),
+      meals: meals.slice(0, 5),
       leaderboard,
       pointsEnabled: config.pointsEnabled,
+      usersWithChores,
     });
     
   } catch (error) {
@@ -121,13 +145,64 @@ router.post('/chores/:choreId/ignore', (req, res) => {
     const { choreId } = req.params;
     ChoreService.ignoreChore(choreId);
     
-    req.flash('warning', 'Chore ignored (no points awarded).');
+    req.flash('warning', 'Chore skipped - 0 points awarded.');
     res.redirect(req.headers.referer || '/');
     
   } catch (error) {
     logger.error('Error ignoring chore:', error);
-    req.flash('error', 'Error ignoring chore.');
+    req.flash('error', 'Error skipping chore.');
     res.redirect(req.headers.referer || '/');
+  }
+});
+
+/**
+ * Available chores page (ad-hoc chores for extra points)
+ */
+router.get('/chores/available', (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const endDate = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // Get available (unassigned) chores
+    const availableChores = ChoreService.getAvailableChores({
+      start: today,
+      end: endDate
+    });
+    
+    // Get all users for the claim form
+    const db = getDb();
+    const users = db.prepare('SELECT * FROM users ORDER BY name').all();
+    
+    res.render('available_chores', { availableChores, users });
+    
+  } catch (error) {
+    logger.error('Error rendering available chores:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+/**
+ * Claim an available chore (POST)
+ */
+router.post('/chores/:choreId/claim', (req, res) => {
+  try {
+    const { choreId } = req.params;
+    const { userName } = req.body;
+    
+    if (!userName) {
+      req.flash('error', 'Please select a user.');
+      return res.redirect('/chores/available');
+    }
+    
+    ChoreService.claimChore(choreId, userName);
+    req.flash('success', `Chore claimed by ${userName}! Complete it to earn points.`);
+    
+    res.redirect('/chores/available');
+    
+  } catch (error) {
+    logger.error('Error claiming chore:', error);
+    req.flash('error', error.message || 'Error claiming chore.');
+    res.redirect('/chores/available');
   }
 });
 

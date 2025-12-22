@@ -9,20 +9,63 @@ body {
   line-height: 1.6;
   color: #333;
   background-color: #f5f5f5;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 15px;
+  flex: 1;
 }
 
-/* Navigation */
+/* Kiosk Mode Optimizations */
+@media screen and (max-height: 800px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .navbar {
+    padding: 0.4rem 0;
+  }
+  
+  .meals-week-section {
+    margin-bottom: 0.5rem;
+  }
+  
+  .profile-chores-section {
+    margin-bottom: 0.5rem;
+  }
+  
+  .profile-image,
+  .profile-image-placeholder {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+  }
+  
+  .user-profile-card {
+    padding: 0.5rem;
+    min-width: 120px;
+    max-width: 120px;
+  }
+  
+  .chores-list-container {
+    max-height: 160px;
+  }
+}
+
+/* Navigation - Compact for Kiosk */
 .navbar {
   background-color: #2c3e50;
   color: white;
-  padding: 1rem 0;
-  margin-bottom: 2rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.75rem;
 }
 
 .navbar .container {
@@ -32,7 +75,7 @@ body {
 }
 
 .nav-brand {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: bold;
   color: white;
   text-decoration: none;
@@ -41,7 +84,8 @@ body {
 .nav-links {
   display: flex;
   list-style: none;
-  gap: 2rem;
+  gap: 1rem;
+  font-size: 0.85rem;
 }
 
 .nav-links a {
@@ -54,18 +98,19 @@ body {
   color: #3498db;
 }
 
-/* Cards */
+/* Cards - Compact */
 .card {
   background: white;
   border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .card h2 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: #2c3e50;
+  font-size: 1rem;
 }
 
 /* Buttons */
@@ -268,15 +313,16 @@ body {
   color: #3498db;
 }
 
-/* Messages/Alerts */
+/* Messages/Alerts - Compact */
 .messages {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .alert {
-  padding: 1rem;
+  padding: 0.5rem;
   border-radius: 4px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
 }
 
 .alert-success {
@@ -303,13 +349,14 @@ body {
   border: 1px solid #bee5eb;
 }
 
-/* Footer */
+/* Footer - Compact for Kiosk */
 .footer {
   background-color: #2c3e50;
   color: white;
   text-align: center;
-  padding: 2rem 0;
-  margin-top: 4rem;
+  padding: 0.5rem 0;
+  margin-top: 1rem;
+  font-size: 0.75rem;
 }
 
 /* Page Header */
@@ -372,4 +419,281 @@ body {
   .meals-grid {
     grid-template-columns: 1fr;
   }
+
+  .meals-week-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile-chores-section {
+    flex-direction: column;
+  }
+
+  .user-profile-card {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto 2rem;
+  }
+
+  .chores-list-container {
+    width: 100%;
+  }
 }
+
+/* Dashboard: Meals Week Cards - Compact for Kiosk */
+.meals-week-section {
+  margin-bottom: 0.75rem;
+}
+
+.meals-week-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
+.meal-week-card {
+  background: white;
+  border-radius: 8px;
+  padding: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.meal-week-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.meal-week-card.empty {
+  grid-column: 1 / -1;
+  padding: 1rem;
+  color: #7f8c8d;
+}
+
+.meal-day {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3498db;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.meal-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+/* Dashboard: Profile & Chores Section - Compact for Kiosk */
+.profile-chores-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.profile-chores-section:last-of-type {
+  margin-bottom: 0.75rem;
+}
+
+.no-users {
+  text-align: center;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.user-profile-card {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  min-width: 140px;
+  max-width: 140px;
+  flex-shrink: 0;
+}
+
+.profile-image-container {
+  margin-bottom: 0.5rem;
+}
+
+.profile-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #3498db;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.profile-image-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  border: 3px solid #3498db;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  margin: 0 auto;
+}
+
+.profile-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.profile-points {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  background: #f8f9fa;
+  padding: 0.4rem 0.75rem;
+  border-radius: 15px;
+  margin-top: 0.5rem;
+}
+
+.points-icon {
+  font-size: 1rem;
+}
+
+.points-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #3498db;
+}
+
+/* Chores List Container - Compact for Kiosk */
+.chores-list-container {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.no-chores {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.chore-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem;
+  border-bottom: 1px solid #ecf0f1;
+  gap: 0.75rem;
+}
+
+.chore-row:last-child {
+  border-bottom: none;
+}
+
+.chore-row.completed {
+  opacity: 0.5;
+}
+
+.chore-row.skipped {
+  opacity: 0.7;
+}
+
+.chore-details {
+  flex: 1;
+}
+
+.chore-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.15rem;
+}
+
+.chore-title.skipped-text {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.chore-meta-info {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #7f8c8d;
+}
+
+.chore-due-date {
+  color: #95a5a6;
+}
+
+.chore-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-chore {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  min-width: 90px;
+}
+
+.btn-complete {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.btn-complete:hover {
+  background-color: #27ae60;
+  transform: scale(1.05);
+}
+
+.btn-skip {
+  background-color: #f39c12;
+  color: white;
+}
+
+.btn-skip:hover {
+  background-color: #e67e22;
+  transform: scale(1.05);
+}
+
+.chore-status-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.done-badge {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.skipped-badge {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+/* Quick Links - Hidden for Kiosk */
+.quick-links {
+  display: none;
+}
+

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Manage Chores - <%= user.name %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <div class="admin-header">
+      <h1>
+        <% if (user.avatar) { %>
+          <span style="font-size: 30px; margin-right: 10px;"><%= user.avatar %></span>
+        <% } %>
+        <%= user.name %>'s Chores
+      </h1>
+      <a href="/admin/chores/user/<%= user.id %>/create" class="btn btn-primary mobile-btn">➕ Add Chore</a>
+    </div>
+
+    <% if (chores.length === 0) { %>
+      <div class="card">
+        <p>No chores assigned yet.</p>
+        <a href="/admin/chores/user/<%= user.id %>/create" class="btn btn-primary">Add first chore</a>
+      </div>
+    <% } else { %>
+      <div class="admin-list">
+        <% chores.forEach(chore => { %>
+          <div class="admin-list-item">
+            <div class="item-info">
+              <div class="item-title"><%= chore.title %></div>
+              <div class="item-meta">
+                ⭐ <%= chore.points %> points
+                <% if (chore.recurrence) { %>
+                  • 
+                  <% 
+                    const frequencyLabels = {
+                      'daily': 'Every Day',
+                      'weekends': 'Weekends',
+                      'weekdays': 'Weekdays',
+                      'school-week': 'School Week (Sun-Thu)'
+                    };
+                    const label = frequencyLabels[chore.recurrence] || chore.recurrence;
+                  %>
+                  <%= label %>
+                <% } %>
+              </div>
+            </div>
+            <div class="item-actions">
+              <a href="/admin/chores/<%= chore.task_id %>/edit" class="btn btn-small btn-secondary mobile-btn" style="margin-right: 5px;">✏️ Edit</a>
+              <a href="/admin/chores/<%= chore.task_id %>/delete-confirm" class="btn btn-small btn-danger mobile-btn">🗑️ Delete</a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="admin-footer-actions">
+      <a href="/admin/chores" class="btn btn-secondary mobile-btn">← Back to Users</a>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

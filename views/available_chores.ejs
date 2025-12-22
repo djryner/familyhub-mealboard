@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Available Chores - Extra Points</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/nav', { pointsEnabled: true }) %>
+
+  <main class="container">
+    <%- include('partials/messages') %>
+
+    <div class="page-header">
+      <h1>🌟 Available Chores - Earn Extra Points!</h1>
+      <p style="color: #666; margin-top: 0.5rem;">
+        These chores are available for anyone to claim and complete.
+      </p>
+    </div>
+
+    <% if (availableChores.length === 0) { %>
+      <div class="card">
+        <p>No available chores right now. Check back later for more opportunities to earn points!</p>
+        <a href="/" class="btn btn-primary">← Back to Dashboard</a>
+      </div>
+    <% } else { %>
+      <div class="chores-grid">
+        <% availableChores.forEach(chore => { %>
+          <div class="chore-card">
+            <h3><%= chore.title %></h3>
+            <div class="chore-meta">
+              <span>📅 <%= new Date(chore.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+              <span>⭐ <%= chore.points %> points</span>
+            </div>
+            
+            <form method="POST" action="/chores/<%= chore.id %>/claim" style="margin-top: 1rem;">
+              <div class="form-group">
+                <label for="userName_<%= chore.id %>">Who will do this chore?</label>
+                <select id="userName_<%= chore.id %>" name="userName" class="form-control" required>
+                  <option value="">Select a person...</option>
+                  <% users.forEach(user => { %>
+                    <option value="<%= user.name %>"><%= user.name %></option>
+                  <% }); %>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-success" style="width: 100%;">
+                ✓ Claim This Chore
+              </button>
+            </form>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="page-header" style="margin-top: 2rem;">
+      <a href="/" class="btn btn-secondary">← Back to Dashboard</a>
+      <a href="/chores" class="btn btn-primary">View All Chores</a>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

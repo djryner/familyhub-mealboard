@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Delete Chore - <%= chore.title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <div class="delete-confirm-card">
+      <div class="delete-icon">⚠️</div>
+      <h1>Delete Chore?</h1>
+      
+      <div class="delete-details">
+        <p><strong>Chore:</strong> <%= chore.title %></p>
+        <% if (user) { %>
+          <p><strong>Assigned to:</strong> <%= user.name %></p>
+        <% } %>
+        <p><strong>Points:</strong> <%= chore.points %></p>
+        <% if (chore.recurrence) { %>
+          <p><strong>Frequency:</strong> 
+            <% 
+              const frequencyLabels = {
+                'daily': 'Every Day',
+                'weekends': 'Weekends',
+                'weekdays': 'Weekdays',
+                'school-week': 'School Week (Sun-Thu)'
+              };
+              const label = frequencyLabels[chore.recurrence] || chore.recurrence;
+            %>
+            <%= label %>
+          </p>
+        <% } %>
+      </div>
+      
+      <div class="alert alert-warning">
+        <strong>Warning:</strong> This will delete the chore definition and all future occurrences. Past completions will remain in the history.
+      </div>
+      
+      <form method="POST" action="/admin/chores/<%= chore.task_id %>/delete">
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger mobile-btn">🗑️ Yes, Delete</button>
+          <% if (user) { %>
+            <a href="/admin/chores/user/<%= user.id %>" class="btn btn-secondary mobile-btn">Cancel</a>
+          <% } else { %>
+            <a href="/admin/chores" class="btn btn-secondary mobile-btn">Cancel</a>
+          <% } %>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

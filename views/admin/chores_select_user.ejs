@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Select User - Manage Chores</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <div class="admin-header">
+      <h1>📋 Select User for Chores</h1>
+    </div>
+
+    <!-- Ad-Hoc Chores Section -->
+    <div class="card" style="background: #e8f5e9; border-left: 4px solid #4caf50; margin-bottom: 2rem;">
+      <div class="admin-list">
+        <a href="/admin/chores/adhoc" class="admin-list-item" style="text-decoration: none; color: inherit;">
+          <div class="item-info">
+            <div class="item-title">
+              <span style="font-size: 30px; margin-right: 10px; vertical-align: middle;">🌟</span>
+              Ad-Hoc / Available Chores
+            </div>
+            <div class="item-meta">
+              Chores available for any user to claim • <%= adHocCount || 0 %> chore<%= (adHocCount !== 1) ? 's' : '' %>
+            </div>
+          </div>
+          <div class="item-actions">
+            <span class="btn btn-small btn-primary mobile-btn">Manage →</span>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <% if (users.length === 0) { %>
+      <div class="card">
+        <p>No users found. Please create a user first.</p>
+        <a href="/admin/users/create" class="btn btn-primary">Create User</a>
+      </div>
+    <% } else { %>
+      <div class="admin-list">
+        <% users.forEach(user => { %>
+          <a href="/admin/chores/user/<%= user.id %>" class="admin-list-item" style="text-decoration: none; color: inherit;">
+            <div class="item-info">
+              <div class="item-title">
+                <% if (user.image_url) { %>
+                  <img src="<%= user.image_url %>" alt="<%= user.name %>" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; vertical-align: middle;">
+                <% } else if (user.avatar) { %>
+                  <span style="font-size: 30px; margin-right: 10px; vertical-align: middle;"><%= user.avatar %></span>
+                <% } %>
+                <%= user.name %>
+              </div>
+              <div class="item-meta">
+                <% const choreCount = user.choreCount || 0; %>
+                <%= choreCount %> chore<%= choreCount !== 1 ? 's' : '' %> assigned
+              </div>
+            </div>
+            <div class="item-actions">
+              <span class="btn btn-small btn-primary mobile-btn">Manage →</span>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="admin-footer-actions">
+      <a href="/admin" class="btn btn-secondary mobile-btn">← Back to Admin</a>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

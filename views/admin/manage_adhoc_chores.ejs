@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Manage Ad-Hoc Chores - Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <div class="admin-header">
+      <h1>🌟 Ad-Hoc / Available Chores</h1>
+      <p style="color: #666; font-size: 0.95rem; margin-top: 0.5rem;">
+        These chores are available for any user to claim and complete for extra points.
+      </p>
+    </div>
+
+    <div class="admin-actions">
+      <a href="/admin/chores/adhoc/create" class="btn btn-primary mobile-btn">➕ Add Ad-Hoc Chore</a>
+    </div>
+
+    <% if (chores.length === 0) { %>
+      <div class="card">
+        <p>No ad-hoc chores created yet. Add one to get started!</p>
+        <a href="/admin/chores/adhoc/create" class="btn btn-primary">Add first chore</a>
+      </div>
+    <% } else { %>
+      <div class="admin-list">
+        <% chores.forEach(chore => { %>
+          <div class="admin-list-item">
+            <div class="item-info">
+              <div class="item-title"><%= chore.title %></div>
+              <div class="item-meta">
+                Points: ⭐ <%= chore.points %>
+              </div>
+            </div>
+            <div class="item-actions">
+              <a href="/admin/chores/adhoc/<%= chore.task_id %>/edit" class="btn btn-small btn-primary mobile-btn">Edit</a>
+              <form method="POST" action="/admin/chores/adhoc/<%= chore.task_id %>/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this chore? All future occurrences will be removed.');">
+                <button type="submit" class="btn btn-small btn-danger mobile-btn">Delete</button>
+              </form>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="admin-footer-actions">
+      <a href="/admin/chores" class="btn btn-secondary mobile-btn">← Back to Chores</a>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

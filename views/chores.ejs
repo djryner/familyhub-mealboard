@@ -19,8 +19,12 @@
     <% } else { %>
       <div class="chores-grid">
         <% chores.forEach(chore => { %>
-          <div class="chore-card">
-            <h3><%= chore.title %></h3>
+          <div class="chore-card <%= chore.status === 'completed' ? 'completed' : '' %> <%= chore.status === 'ignored' ? 'skipped' : '' %>">
+            <% if (chore.status === 'ignored') { %>
+              <h3 style="text-decoration: line-through; opacity: 0.6;"><%= chore.title %></h3>
+            <% } else { %>
+              <h3><%= chore.title %></h3>
+            <% } %>
             <p class="chore-meta">
               <span class="due-date">📅 <%= chore.dueDate %></span>
               <% if (chore.assignedTo) { %>
@@ -28,14 +32,20 @@
               <% } %>
               <span class="points">⭐ <%= chore.points %> pts</span>
             </p>
-            <div class="chore-actions">
-              <form method="POST" action="/chores/<%= chore.id %>/complete">
-                <button type="submit" class="btn btn-success">✓ Complete</button>
-              </form>
-              <form method="POST" action="/chores/<%= chore.id %>/ignore">
-                <button type="submit" class="btn btn-warning">Skip</button>
-              </form>
-            </div>
+            <% if (chore.status === 'ignored') { %>
+              <div class="status-badge" style="background: #ffa500; color: white; padding: 5px 10px; border-radius: 5px; display: inline-block;">⏭️ Skipped</div>
+            <% } else if (chore.status === 'completed') { %>
+              <div class="status-badge" style="background: #28a745; color: white; padding: 5px 10px; border-radius: 5px; display: inline-block;">✅ Completed</div>
+            <% } else { %>
+              <div class="chore-actions">
+                <form method="POST" action="/chores/<%= chore.id %>/complete">
+                  <button type="submit" class="btn btn-success">✓ Complete</button>
+                </form>
+                <form method="POST" action="/chores/<%= chore.id %>/ignore">
+                  <button type="submit" class="btn btn-warning">Skip</button>
+                </form>
+              </div>
+            <% } %>
           </div>
         <% }); %>
       </div>

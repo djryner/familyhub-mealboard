@@ -55,7 +55,7 @@ export class PointsService {
    */
   static listUsers() {
     const db = getDb();
-    const stmt = db.prepare('SELECT id, name, color, avatar FROM users ORDER BY name');
+    const stmt = db.prepare('SELECT id, name, color, avatar, image_url, is_parent FROM users ORDER BY name');
     return stmt.all();
   }
   
@@ -70,10 +70,12 @@ export class PointsService {
         u.name,
         u.color,
         u.avatar,
+        u.image_url,
+        u.is_parent,
         COALESCE(SUM(p.points), 0) as balance
       FROM users u
       LEFT JOIN points_ledger p ON u.name = p.user_name
-      GROUP BY u.id, u.name, u.color, u.avatar
+      GROUP BY u.id, u.name, u.color, u.avatar, u.image_url, u.is_parent
       ORDER BY balance DESC, u.name
     `);
     

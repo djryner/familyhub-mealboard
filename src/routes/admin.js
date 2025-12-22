@@ -84,8 +84,9 @@ router.get('/', async (req, res) => {
  */
 router.get('/users', (req, res) => {
   try {
-    const users = PointsService.listUsers();
     const leaderboard = PointsService.getLeaderboard();
+    // Use leaderboard as users since it includes all user data plus balance
+    const users = leaderboard;
     res.render('admin/users', { users, leaderboard });
   } catch (error) {
     logger.error('Error rendering users:', error);
@@ -265,17 +266,321 @@ router.post('/users/:userId/edit', uploadUserImage.single('userImage'), (req, re
 /**
  * Chores Management
  */
+// User selection page for chores
 router.get('/chores', (req, res) => {
   try {
-    const templates = ChoreService.getChoreTemplates(false);
-    const metadata = getDb().prepare('SELECT * FROM chore_metadata ORDER BY title').all();
-    res.render('admin/chores', { templates, metadata });
+    const db = getDb();
+    const users = db.prepare('SELECT * FROM users ORDER BY name').all();
+    
+    // Add chore count to each user (case-insensitive match on name)
+    const usersWithCounts = users.map(user => {
+      const choreCount = db.prepare(`
+        SELECT COUNT(*) as count 
+        FROM chore_metadata 
+        WHERE LOWER(assigned_to) = LOWER(?)
+      `).get(user.name).count;
+      return { ...user, choreCount };
+    });
+    
+    // Get ad-hoc chore count
+    const adHocCount = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM chore_metadata 
+      WHERE assigned_to IS NULL OR assigned_to = ''
+    `).get().count;
+    
+    res.render('admin/chores_select_user', { users: usersWithCounts, adHocCount });
   } catch (error) {
-    logger.error('Error rendering chores:', error);
+    logger.error('Error rendering chores user selection:', error);
     res.status(500).send('Internal Server Error');
   }
 });
 
+// Manage chores for a specific user
+router.get('/chores/user/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    
+    if (!user) {
+      req.flash('error', 'User not found.');
+      return res.redirect('/admin/chores');
+    }
+    
+    const chores = ChoreService.getChoresByUser(user.name);
+    res.render('admin/manage_user_chores', { user, chores });
+  } catch (error) {
+    logger.error('Error rendering user chores:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Create chore for a user
+router.get('/chores/user/:userId/create', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    
+    if (!user) {
+      req.flash('error', 'User not found.');
+      return res.redirect('/admin/chores');
+    }
+    
+    res.render('admin/create_user_chore', { user });
+  } catch (error) {
+    logger.error('Error rendering create chore form:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+router.post('/chores/user/:userId/create', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { title, frequency, points } = req.body;
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    
+    if (!user) {
+      req.flash('error', 'User not found.');
+      return res.redirect('/admin/chores');
+    }
+    
+    if (!title || !frequency || !points) {
+      req.flash('error', 'All fields are required.');
+      return res.redirect(`/admin/chores/user/${userId}/create`);
+    }
+    
+    ChoreService.createChore({
+      title,
+      assignedTo: user.name,
+      frequency,
+      points: parseInt(points, 10)
+    });
+    
+    req.flash('success', 'Chore created successfully!');
+    res.redirect(`/admin/chores/user/${userId}`);
+  } catch (error) {
+    logger.error('Error creating chore:', error);
+    req.flash('error', 'Error creating chore.');
+    res.redirect(`/admin/chores/user/${req.params.userId}/create`);
+  }
+});
+
+// Edit chore
+router.get('/chores/:taskId/edit', (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const chore = ChoreService.getChoreMetadata(taskId);
+    
+    if (!chore) {
+      req.flash('error', 'Chore not found.');
+      return res.redirect('/admin/chores');
+    }
+    
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE name = ?').get(chore.assigned_to);
+    
+    res.render('admin/edit_user_chore', { chore, user });
+  } catch (error) {
+    logger.error('Error rendering edit chore form:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+router.post('/chores/:taskId/edit', (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { title, frequency, points } = req.body;
+    
+    const chore = ChoreService.getChoreMetadata(taskId);
+    if (!chore) {
+      req.flash('error', 'Chore not found.');
+      return res.redirect('/admin/chores');
+    }
+    
+    if (!title || !frequency || !points) {
+      req.flash('error', 'All fields are required.');
+      return res.redirect(`/admin/chores/${taskId}/edit`);
+    }
+    
+    ChoreService.updateChore(taskId, {
+      title,
+      frequency,
+      points: parseInt(points, 10)
+    });
+    
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE name = ?').get(chore.assigned_to);
+    
+    req.flash('success', 'Chore updated successfully!');
+    res.redirect(`/admin/chores/user/${user.id}`);
+  } catch (error) {
+    logger.error('Error updating chore:', error);
+    req.flash('error', 'Error updating chore.');
+    res.redirect(`/admin/chores/${req.params.taskId}/edit`);
+  }
+});
+
+// Delete chore confirmation
+router.get('/chores/:taskId/delete-confirm', (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const chore = ChoreService.getChoreMetadata(taskId);
+    
+    if (!chore) {
+      req.flash('error', 'Chore not found.');
+      return res.redirect('/admin/chores');
+    }
+    
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE name = ?').get(chore.assigned_to);
+    
+    res.render('admin/delete_user_chore_confirm', { chore, user });
+  } catch (error) {
+    logger.error('Error loading chore for deletion:', error);
+    req.flash('error', 'Error loading chore.');
+    res.redirect('/admin/chores');
+  }
+});
+
+router.post('/chores/:taskId/delete', (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const chore = ChoreService.getChoreMetadata(taskId);
+    
+    if (!chore) {
+      req.flash('error', 'Chore not found.');
+      return res.redirect('/admin/chores');
+    }
+    
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE name = ?').get(chore.assigned_to);
+    
+    ChoreService.deleteChore(taskId);
+    
+    req.flash('success', 'Chore deleted successfully!');
+    
+    if (user) {
+      res.redirect(`/admin/chores/user/${user.id}`);
+    } else {
+      res.redirect('/admin/chores');
+    }
+  } catch (error) {
+    logger.error('Error deleting chore:', error);
+    req.flash('error', 'Error deleting chore.');
+    res.redirect('/admin/chores');
+  }
+});
+
+/**
+ * Ad-Hoc / Available Chores Management
+ */
+// Manage ad-hoc chores (unassigned, available for any user)
+router.get('/chores/adhoc', (req, res) => {
+  try {
+    const chores = ChoreService.getAdHocChores();
+    res.render('admin/manage_adhoc_chores', { chores });
+  } catch (error) {
+    logger.error('Error rendering ad-hoc chores:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Create ad-hoc chore form
+router.get('/chores/adhoc/create', (req, res) => {
+  res.render('admin/create_adhoc_chore');
+});
+
+// Create ad-hoc chore
+router.post('/chores/adhoc/create', (req, res) => {
+  try {
+    const { title, points } = req.body;
+    
+    if (!title || !points) {
+      req.flash('error', 'Title and points are required.');
+      return res.redirect('/admin/chores/adhoc/create');
+    }
+    
+    ChoreService.createChore({
+      title,
+      assignedTo: null, // No assignment = available to anyone
+      frequency: 'adhoc', // Default frequency for ad-hoc chores
+      points: parseInt(points)
+    });
+    
+    req.flash('success', 'Ad-hoc chore created successfully!');
+    res.redirect('/admin/chores/adhoc');
+  } catch (error) {
+    logger.error('Error creating ad-hoc chore:', error);
+    req.flash('error', 'Error creating chore.');
+    res.redirect('/admin/chores/adhoc/create');
+  }
+});
+
+// Edit ad-hoc chore form
+router.get('/chores/adhoc/:taskId/edit', (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const chore = ChoreService.getChoreMetadata(taskId);
+    
+    if (!chore) {
+      req.flash('error', 'Chore not found.');
+      return res.redirect('/admin/chores/adhoc');
+    }
+    
+    res.render('admin/edit_adhoc_chore', { chore });
+  } catch (error) {
+    logger.error('Error loading chore for editing:', error);
+    req.flash('error', 'Error loading chore.');
+    res.redirect('/admin/chores/adhoc');
+  }
+});
+
+// Update ad-hoc chore
+router.post('/chores/adhoc/:taskId/edit', (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { title, points } = req.body;
+    
+    if (!title || !points) {
+      req.flash('error', 'Title and points are required.');
+      return res.redirect(`/admin/chores/adhoc/${taskId}/edit`);
+    }
+    
+    ChoreService.updateChore(taskId, {
+      title,
+      frequency: 'adhoc', // Keep adhoc frequency
+      points: parseInt(points)
+    });
+    
+    req.flash('success', 'Chore updated successfully!');
+    res.redirect('/admin/chores/adhoc');
+  } catch (error) {
+    logger.error('Error updating chore:', error);
+    req.flash('error', 'Error updating chore.');
+    res.redirect(`/admin/chores/adhoc/${taskId}/edit`);
+  }
+});
+
+// Delete ad-hoc chore
+router.post('/chores/adhoc/:taskId/delete', (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    ChoreService.deleteChore(taskId);
+    
+    req.flash('success', 'Ad-hoc chore deleted successfully!');
+    res.redirect('/admin/chores/adhoc');
+  } catch (error) {
+    logger.error('Error deleting chore:', error);
+    req.flash('error', 'Error deleting chore.');
+    res.redirect('/admin/chores/adhoc');
+  }
+});
+
+// Legacy template routes (keeping for compatibility)
 router.get('/chores/template/create', (req, res) => {
   const categories = ChoreService.getChoreCategories();
   res.render('admin/create_chore_template', { categories });
@@ -300,55 +605,6 @@ router.post('/chores/template/create', (req, res) => {
     logger.error('Error creating chore template:', error);
     req.flash('error', 'Error creating chore template.');
     res.redirect('/admin/chores/template/create');
-  }
-});
-
-router.get('/chores/:id/delete-confirm', (req, res) => {
-  try {
-    const { id } = req.params;
-    const db = getDb();
-    const template = db.prepare('SELECT * FROM chore_templates WHERE id = ?').get(id);
-    
-    if (!template) {
-      req.flash('error', 'Chore template not found.');
-      return res.redirect('/admin/chores');
-    }
-    
-    res.render('admin/delete_chore_confirm', { template });
-  } catch (error) {
-    logger.error('Error loading chore template for deletion:', error);
-    req.flash('error', 'Error loading chore template.');
-    res.redirect('/admin/chores');
-  }
-});
-
-router.post('/chores/template/:id/delete', (req, res) => {
-  try {
-    const { id } = req.params;
-    const db = getDb();
-    db.prepare('DELETE FROM chore_templates WHERE id = ?').run(id);
-    
-    req.flash('success', 'Chore template deleted successfully!');
-    res.redirect('/admin/chores');
-  } catch (error) {
-    logger.error('Error deleting chore template:', error);
-    req.flash('error', 'Error deleting chore template.');
-    res.redirect('/admin/chores');
-  }
-});
-
-router.post('/chores/:id/delete', (req, res) => {
-  try {
-    const { id } = req.params;
-    const db = getDb();
-    db.prepare('DELETE FROM chore_templates WHERE id = ?').run(id);
-    
-    req.flash('success', 'Chore template deleted successfully!');
-    res.redirect('/admin/chores');
-  } catch (error) {
-    logger.error('Error deleting chore template:', error);
-    req.flash('error', 'Error deleting chore template.');
-    res.redirect('/admin/chores');
   }
 });
 
@@ -504,6 +760,50 @@ router.post('/rewards/create', (req, res) => {
     logger.error('Error creating reward:', error);
     req.flash('error', 'Error creating reward.');
     res.redirect('/admin/rewards/create');
+  }
+});
+
+// Edit reward form
+router.get('/rewards/:id/edit', (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+    const reward = db.prepare('SELECT * FROM rewards WHERE id = ?').get(id);
+    
+    if (!reward) {
+      req.flash('error', 'Reward not found.');
+      return res.redirect('/admin/rewards');
+    }
+    
+    res.render('admin/edit_reward', { reward });
+  } catch (error) {
+    logger.error('Error loading reward for editing:', error);
+    req.flash('error', 'Error loading reward.');
+    res.redirect('/admin/rewards');
+  }
+});
+
+// Update reward
+router.post('/rewards/:id/edit', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, cost_points, emoji, active } = req.body;
+    
+    if (!title || !cost_points) {
+      req.flash('error', 'Title and cost are required.');
+      return res.redirect(`/admin/rewards/${id}/edit`);
+    }
+    
+    const db = getDb();
+    const stmt = db.prepare('UPDATE rewards SET title = ?, cost_points = ?, emoji = ?, active = ? WHERE id = ?');
+    stmt.run(title, parseInt(cost_points, 10), emoji || '🎁', active === 'on' ? 1 : 0, id);
+    
+    req.flash('success', 'Reward updated successfully!');
+    res.redirect('/admin/rewards');
+  } catch (error) {
+    logger.error('Error updating reward:', error);
+    req.flash('error', 'Error updating reward.');
+    res.redirect(`/admin/rewards/${id}/edit`);
   }
 });
 

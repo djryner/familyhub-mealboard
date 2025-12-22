@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Add Chore - <%= user.name %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <%- include('../partials/nav') %>
+
+  <main class="container admin-container">
+    <%- include('../partials/messages') %>
+
+    <h1>➕ Add Chore for <%= user.name %></h1>
+
+    <div class="admin-form-card">
+      <form method="POST" action="/admin/chores/user/<%= user.id %>/create" class="admin-form">
+        <div class="form-group">
+          <label for="title">Chore Name *</label>
+          <input type="text" id="title" name="title" required placeholder="e.g., Clean Room" class="mobile-input">
+        </div>
+
+        <div class="form-group">
+          <label for="frequency">Frequency *</label>
+          <select id="frequency" name="frequency" required class="mobile-input">
+            <option value="">-- Select Frequency --</option>
+            <option value="daily">Every Day</option>
+            <option value="weekends">Weekends (Sat-Sun)</option>
+            <option value="weekdays">Weekdays (Mon-Fri)</option>
+            <option value="school-week">School Week (Sun-Thu)</option>
+          </select>
+          <small class="form-text">How often should this chore be completed?</small>
+        </div>
+
+        <div class="form-group">
+          <label for="points">Points per Completion *</label>
+          <input type="number" id="points" name="points" min="1" value="1" required class="mobile-input">
+          <small class="form-text">How many points should be awarded for completing this chore?</small>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary mobile-btn">💾 Create Chore</button>
+          <a href="/admin/chores/user/<%= user.id %>" class="btn btn-secondary mobile-btn">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>
