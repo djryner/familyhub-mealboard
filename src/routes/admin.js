@@ -6,24 +6,17 @@ import { getDb } from '../db/init.js';
 import { logger } from '../utils/logger.js';
 import { generateQRCode } from '../utils/qrcode.js';
 import { uploadUserImage, getUserImagePath, deleteUserImage } from '../utils/upload.js';
-import os from 'os';
 
 const router = express.Router();
 
 /**
- * Get the server's local IP address
+ * Get the configured admin URL (via Cloudflare Tunnel or local)
+ * @returns {string} Full admin URL
  */
-function getLocalIpAddress() {
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
-      // Skip internal (loopback) and non-IPv4 addresses
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
-      }
-    }
-  }
-  return 'localhost';
+function getAdminUrl() {
+  const baseUrl = process.env.ADMIN_BASE_URL || 'http://localhost:8000';
+  const adminPath = process.env.ADMIN_PATH || '/admin';
+  return `${baseUrl}${adminPath}`;
 }
 
 /**
@@ -33,20 +26,13 @@ router.get('/', async (req, res) => {
   try {
     const db = getDb();
     
-    // Get the admin URL
-    const protocol = req.protocol;
-    const host = req.get('host');
-    const adminUrl = `${protocol}://${host}/admin`;
-    
-    // For local network access, also provide IP-based URL
-    const localIp = getLocalIpAddress();
-    const port = process.env.PORT || 8000;
-    const localAdminUrl = `http://${localIp}:${port}/admin`;
+    // Get the configured admin URL (via Cloudflare Tunnel)
+    const adminUrl = getAdminUrl();
     
     // Generate QR code for the admin URL
     let qrCodeDataUrl = null;
     try {
-      qrCodeDataUrl = await generateQRCode(localAdminUrl, { width: 300 });
+      qrCodeDataUrl = await generateQRCode(adminUrl, { width: 300 });
     } catch (error) {
       logger.warn('Could not generate QR code:', error);
     }
@@ -70,7 +56,7 @@ router.get('/', async (req, res) => {
       recentChores,
       recentRedemptions,
       qrCodeDataUrl,
-      localAdminUrl,
+      adminUrl,
     });
   } catch (error) {
     logger.error('Error rendering admin dashboard:', error);

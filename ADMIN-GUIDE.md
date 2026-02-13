@@ -1,14 +1,23 @@
 # Admin Interface Guide
 
 ## Overview
-The FamilyHub Admin Interface provides a mobile-friendly way to manage your family's hub without needing to use the kiosk screen. Any device on the same network can access the admin interface.
+The FamilyHub Admin Interface provides a mobile-friendly way to manage your family's hub from anywhere. The admin interface is accessible globally via secure HTTPS through Cloudflare Tunnel.
 
 ## Accessing the Admin Interface
 
-1. **From the same network**: Navigate to `http://<raspberry-pi-ip>:8000/admin`
-2. **On the Pi itself**: Navigate to `http://localhost:8000/admin`
-3. **Via navigation**: Click "⚙️ Admin" in the main navigation menu
-4. **QR Code (Desktop)**: When viewing the admin page on a desktop/laptop, scan the QR code at the top with your phone to quickly open the admin on your mobile device
+### Production (Recommended)
+- **Global Access (Cloudflare Tunnel)**: Navigate to `https://admin.soft-relay.com/admin`
+  - Works from any network (home Wi-Fi, cellular, remote)
+  - Secure HTTPS connection
+  - No need to be on the same network as the Raspberry Pi
+
+### Local Development
+- **On development machine**: Navigate to `http://localhost:8000/admin`
+
+### Quick Access Methods
+1. **Direct URL**: Visit the admin URL directly
+2. **Via navigation**: Click "⚙️ Admin" in the main navigation menu
+3. **QR Code (Desktop)**: When viewing the admin page on a desktop/laptop, scan the QR code at the top with your phone to quickly open the admin on your mobile device from anywhere
 
 ## Features
 
@@ -72,17 +81,36 @@ The admin interface is designed with mobile devices in mind:
 
 ## Technical Details
 
-- **Port**: 8000 (default)
+- **Production URL**: `https://admin.soft-relay.com/admin`
+- **Access Method**: Cloudflare Tunnel (secure, global)
+- **Port (Local Dev)**: 8000 (default)
 - **Database**: Local SQLite file (`familyhub.db`)
 - **Session Management**: Uses express-session for flash messages
-- **No External APIs**: Everything runs locally
+- **Security**: HTTPS with Cloudflare TLS termination
+
+## Configuration
+
+The admin URL is configured via environment variables:
+
+```bash
+# Production
+ADMIN_BASE_URL=https://admin.soft-relay.com
+ADMIN_PATH=/admin
+
+# Local Development
+ADMIN_BASE_URL=http://localhost:8000
+ADMIN_PATH=/admin
+```
+
+See `.env.example` for full configuration options.
 
 ## Troubleshooting
 
 **Can't access admin interface:**
 - Ensure the server is running: `systemctl status familyhub` (on Pi)
-- Check your network connection
-- Verify you're using the correct IP address
+- For production: Check that Cloudflare Tunnel is running: `systemctl status cloudflared`
+- For local dev: Check your network connection
+- Verify you're using the correct URL
 
 **Changes not showing:**
 - Refresh your browser (the kiosk screen auto-refreshes every 60 seconds)
@@ -91,3 +119,8 @@ The admin interface is designed with mobile devices in mind:
 **Database errors:**
 - Check server logs: `journalctl -u familyhub -f` (on Pi)
 - Verify database file permissions
+
+**Cloudflare Tunnel issues:**
+- Check tunnel status: `cloudflared tunnel info familyhub-admin`
+- Review tunnel logs: `journalctl -u cloudflared -f`
+- Verify DNS record in Cloudflare dashboard

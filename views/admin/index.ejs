@@ -20,14 +20,19 @@
       <div class="qr-code-section desktop-only">
         <div class="qr-code-card">
           <div class="qr-code-header">
-            <h3>📱 Scan to Open on Mobile</h3>
-            <p>Use your phone's camera to scan this QR code and manage FamilyHub from anywhere on your network</p>
+            <h3>📱 Scan to Access Admin Securely</h3>
+            <p>Use your phone's camera to scan this QR code and manage FamilyHub from anywhere - no need to be on the same Wi-Fi network</p>
           </div>
           <div class="qr-code-image">
             <img src="<%= qrCodeDataUrl %>" alt="QR Code for Admin Access" />
           </div>
           <div class="qr-code-url">
-            <code><%= localAdminUrl %></code>
+            <code><%= adminUrl %></code>
+          </div>
+          <div class="qr-code-footer">
+            <p class="security-note">
+              <small>🔒 Secure access via Cloudflare Tunnel</small>
+            </p>
           </div>
         </div>
       </div>

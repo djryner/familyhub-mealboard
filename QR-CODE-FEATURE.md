@@ -1,15 +1,15 @@
 # QR Code Feature for Admin Interface
 
 ## Overview
-Added a QR code feature to the admin dashboard that displays **only on desktop/tablet devices**. When viewing the admin page on a larger screen, users can scan the QR code with their phone to quickly open the admin interface on their mobile device.
+Added a QR code feature to the admin dashboard that displays **only on desktop/tablet devices**. When viewing the admin page on a larger screen, users can scan the QR code with their phone to quickly open the admin interface on their mobile device from anywhere.
 
 ## How It Works
 
 ### Desktop Experience (768px and wider)
-1. Visit http://localhost:8000/admin on a desktop/laptop
+1. Visit the admin interface on a desktop/laptop (via configured URL)
 2. See a prominent QR code card at the top of the page
 3. Scan the QR code with your phone's camera
-4. Automatically opens the admin interface on your phone
+4. Automatically opens the admin interface on your phone - **works from any network** (home Wi-Fi, cellular, etc.)
 
 ### Mobile Experience (under 768px)
 - QR code section is **hidden** (no need to scan when already on mobile)
@@ -18,10 +18,13 @@ Added a QR code feature to the admin dashboard that displays **only on desktop/t
 ## Implementation Details
 
 ### Backend (`src/routes/admin.js`)
-- **Auto-detects local IP address** using Node.js `os.networkInterfaces()`
-- Generates QR code pointing to: `http://<local-ip>:8000/admin`
+- **Configurable Admin URL** from environment variables:
+  - `ADMIN_BASE_URL` (e.g., `https://admin.soft-relay.com`)
+  - `ADMIN_PATH` (e.g., `/admin`)
+- Generates QR code pointing to the configured admin URL
 - Uses the `qrcode` npm package for QR generation
 - Passes QR code data URL to the view
+- **No longer relies on local IP detection** - works globally via Cloudflare Tunnel
 
 ### Frontend (`views/admin/index.ejs`)
 - Displays QR code card with gradient background
@@ -41,20 +44,38 @@ Added a QR code feature to the admin dashboard that displays **only on desktop/t
 
 ## Features
 
-✅ **Automatic IP Detection**: No configuration needed  
+✅ **Global Access**: Works from any network (home, cellular, remote)  
+✅ **Secure HTTPS**: Via Cloudflare Tunnel  
 ✅ **Responsive Design**: Only shows on desktop  
 ✅ **Beautiful UI**: Gradient card with clear instructions  
-✅ **Network Access**: Works across your local network  
+✅ **Network Independent**: No LAN routing or mDNS required  
 ✅ **Easy Scanning**: Large, clear QR code (300x300px)  
 ✅ **URL Display**: Shows the URL for manual entry if needed  
+✅ **Configurable**: Environment variables for easy updates  
 
 ## Example URL
 The QR code encodes a URL like:
 ```
-http://192.168.42.69:8000/admin
+https://admin.soft-relay.com/admin
 ```
 
-This allows any device on the same network to access the admin interface.
+This allows any device from any location to securely access the admin interface.
+
+## Configuration
+
+Set these environment variables in your `.env` file:
+
+```bash
+# Admin Access Configuration
+ADMIN_BASE_URL=https://admin.soft-relay.com
+ADMIN_PATH=/admin
+```
+
+For local development, use:
+```bash
+ADMIN_BASE_URL=http://localhost:8000
+ADMIN_PATH=/admin
+```
 
 ## Dependencies Added
 ```json
@@ -79,17 +100,18 @@ This allows any device on the same network to access the admin interface.
 
 ### On Desktop:
 ```
-╔═══════════════════════════════════╗
-║   📱 Scan to Open on Mobile       ║
-║                                   ║
-║   ┌─────────────────┐            ║
-║   │                 │            ║
-║   │   [QR Code]     │            ║
-║   │                 │            ║
-║   └─────────────────┘            ║
-║                                   ║
-║   http://192.168.42.69:8000/admin║
-╚═══════════════════════════════════╝
+╔═══════════════════════════════════════╗
+║   📱 Scan to Access Admin Securely    ║
+║                                       ║
+║   ┌─────────────────┐                ║
+║   │                 │                ║
+║   │   [QR Code]     │                ║
+║   │                 │                ║
+║   └─────────────────┘                ║
+║                                       ║
+║   https://admin.soft-relay.com/admin ║
+║   🔒 Secure access via Cloudflare    ║
+╚═══════════════════════════════════════╝
 
 [Stats Cards Below...]
 ```
