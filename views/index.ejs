@@ -108,5 +108,12 @@
   </main>
 
   <%- include('partials/footer') %>
+
+  <script>
+    // Auto-refresh the dashboard every 5 minutes to show updated chores/meals
+    setTimeout(function() {
+      window.location.reload();
+    }, 300000); // 5 minutes
+  </script>
 </body>
 </html>
