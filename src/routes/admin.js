@@ -1,3 +1,7 @@
+/**
+ * Admin Routes - FamilyHub
+ * Cloudflare Tunnel enabled for global admin access
+ */
 import express from 'express';
 import { ChoreService } from '../services/chores.js';
 import { MealsService } from '../services/meals.js';
