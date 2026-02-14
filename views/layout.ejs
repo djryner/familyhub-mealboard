@@ -6,7 +6,7 @@
   <title><%= typeof title !== 'undefined' ? title : 'FamilyHub' %></title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="<%= typeof theme !== 'undefined' ? theme : '' %>">
   <nav class="navbar">
     <div class="container">
       <a href="/" class="nav-brand">🏠 FamilyHub</a>

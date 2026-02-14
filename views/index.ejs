@@ -6,7 +6,7 @@
   <title>FamilyHub Dashboard</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="<%= typeof theme !== 'undefined' ? theme : '' %>">
   <%- include('partials/nav', { pointsEnabled }) %>
 
   <main class="container">
