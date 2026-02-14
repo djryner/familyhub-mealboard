@@ -697,3 +697,71 @@ body {
   display: none;
 }
 
+
+/* Seasonal Themes */
+
+/* Valentine's Day (February) */
+.theme-valentine .navbar,
+.theme-valentine .footer {
+  background-color: #e91e63; /* Pink */
+}
+
+.theme-valentine .btn-primary {
+  background-color: #e91e63;
+}
+
+.theme-valentine .btn-primary:hover {
+  background-color: #c2185b;
+}
+
+.theme-valentine .meal-day {
+  color: #e91e63;
+}
+
+.theme-valentine .points-value {
+  color: #e91e63;
+}
+
+/* Thanksgiving (November) */
+.theme-thanksgiving .navbar,
+.theme-thanksgiving .footer {
+  background-color: #d35400; /* Pumpkin Orange */
+}
+
+.theme-thanksgiving .btn-primary {
+  background-color: #d35400;
+}
+
+.theme-thanksgiving .btn-primary:hover {
+  background-color: #a04000;
+}
+
+.theme-thanksgiving .meal-day {
+  color: #d35400;
+}
+
+.theme-thanksgiving .points-value {
+  color: #d35400;
+}
+
+/* Christmas (December) */
+.theme-christmas .navbar,
+.theme-christmas .footer {
+  background-color: #c0392b; /* Holiday Red */
+}
+
+.theme-christmas .btn-primary {
+  background-color: #27ae60; /* Green for buttons */
+}
+
+.theme-christmas .btn-primary:hover {
+  background-color: #219150;
+}
+
+.theme-christmas .meal-day {
+  color: #c0392b;
+}
+
+.theme-christmas .points-value {
+  color: #c0392b;
+}

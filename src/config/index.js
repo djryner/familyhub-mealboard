@@ -19,4 +19,5 @@ export const config = {
   healthEnabled: process.env.FAMILYHUB_HEALTH_ENABLED === 'true',
   pointsEnabled: process.env.POINTS_ENABLED !== 'false',
   pointsDefault: parseInt(process.env.POINTS_DEFAULT || '1', 10),
+  seasonalThemesEnabled: process.env.SEASONAL_THEMES_ENABLED !== 'false',
 };

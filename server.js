@@ -7,6 +7,8 @@ import { initDatabase } from './src/db/init.js';
 import { routes } from './src/routes/index.js';
 import { healthRoutes } from './src/routes/health.js';
 import { logger } from './src/utils/logger.js';
+import { getTheme } from './src/utils/theme.js';
+import { config } from './src/config/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,6 +53,12 @@ app.use((req, res, next) => {
     req.session.messages = req.session.messages || [];
     req.session.messages.push({ type, message });
   };
+  next();
+});
+
+// Theme middleware
+app.use((req, res, next) => {
+  res.locals.theme = config.seasonalThemesEnabled ? getTheme() : '';
   next();
 });
 
