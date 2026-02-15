@@ -7,6 +7,7 @@ import { initDatabase } from './src/db/init.js';
 import { routes } from './src/routes/index.js';
 import { healthRoutes } from './src/routes/health.js';
 import { logger } from './src/utils/logger.js';
+import { getTheme } from './src/utils/theme.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,12 @@ app.use(session({
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Theme middleware
+app.use((req, res, next) => {
+  res.locals.theme = getTheme();
+  next();
+});
 
 // Flash messages middleware
 app.use((req, res, next) => {

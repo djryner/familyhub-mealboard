@@ -1,3 +1,20 @@
+:root {
+  --primary-color: #3498db;
+  --primary-hover: #2980b9;
+  --secondary-color: #2c3e50;
+  --success-color: #2ecc71;
+  --success-hover: #27ae60;
+  --warning-color: #f39c12;
+  --warning-hover: #e67e22;
+  --text-color: #333;
+  --text-muted: #7f8c8d;
+  --text-light: #95a5a6;
+  --background-color: #f5f5f5;
+  --card-bg: #ffffff;
+  --border-color: #ecf0f1;
+  --white: #ffffff;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -7,8 +24,8 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.6;
-  color: #333;
-  background-color: #f5f5f5;
+  color: var(--text-color);
+  background-color: var(--background-color);
   overflow-x: hidden;
   margin: 0;
   padding: 0;
@@ -62,8 +79,8 @@ body {
 
 /* Navigation - Compact for Kiosk */
 .navbar {
-  background-color: #2c3e50;
-  color: white;
+  background-color: var(--secondary-color);
+  color: var(--white);
   padding: 0.5rem 0;
   margin-bottom: 0.75rem;
 }
@@ -77,7 +94,7 @@ body {
 .nav-brand {
   font-size: 1.1rem;
   font-weight: bold;
-  color: white;
+  color: var(--white);
   text-decoration: none;
 }
 
@@ -89,18 +106,18 @@ body {
 }
 
 .nav-links a {
-  color: white;
+  color: var(--white);
   text-decoration: none;
   transition: color 0.3s;
 }
 
 .nav-links a:hover {
-  color: #3498db;
+  color: var(--primary-color);
 }
 
 /* Cards - Compact */
 .card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 0.75rem;
   margin-bottom: 0.75rem;
@@ -109,7 +126,7 @@ body {
 
 .card h2 {
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: var(--secondary-color);
   font-size: 1rem;
 }
 
@@ -126,30 +143,30 @@ body {
 }
 
 .btn-primary {
-  background-color: #3498db;
-  color: white;
+  background-color: var(--primary-color);
+  color: var(--white);
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
+  background-color: var(--primary-hover);
 }
 
 .btn-success {
-  background-color: #2ecc71;
-  color: white;
+  background-color: var(--success-color);
+  color: var(--white);
 }
 
 .btn-success:hover {
-  background-color: #27ae60;
+  background-color: var(--success-hover);
 }
 
 .btn-warning {
-  background-color: #f39c12;
-  color: white;
+  background-color: var(--warning-color);
+  color: var(--white);
 }
 
 .btn-warning:hover {
-  background-color: #e67e22;
+  background-color: var(--warning-hover);
 }
 
 /* Chores */
@@ -162,7 +179,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #ecf0f1;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .chore-item.completed {
@@ -183,12 +200,12 @@ body {
 
 .assigned, .points {
   font-size: 0.9rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .status-badge {
-  background-color: #2ecc71;
-  color: white;
+  background-color: var(--success-color);
+  color: var(--white);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.8rem;
@@ -201,7 +218,7 @@ body {
 }
 
 .chore-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -209,7 +226,7 @@ body {
 
 .chore-card h3 {
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: var(--secondary-color);
 }
 
 .chore-meta {
@@ -218,7 +235,7 @@ body {
   gap: 0.25rem;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 /* Meals */
@@ -228,13 +245,13 @@ body {
 
 .meal-item {
   padding: 0.75rem 0;
-  border-bottom: 1px solid #ecf0f1;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   gap: 1rem;
 }
 
 .meal-date {
-  color: #7f8c8d;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -245,7 +262,7 @@ body {
 }
 
 .meal-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -253,12 +270,12 @@ body {
 
 .meal-card h3 {
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: var(--secondary-color);
 }
 
 .meal-description {
   margin-top: 0.5rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -272,7 +289,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem;
-  border-bottom: 1px solid #ecf0f1;
+  border-bottom: 1px solid var(--border-color);
   gap: 1rem;
 }
 
@@ -287,7 +304,7 @@ body {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #3498db;
+  border: 2px solid var(--primary-color);
   flex-shrink: 0;
 }
 
@@ -310,7 +327,7 @@ body {
 
 .user-points {
   font-weight: bold;
-  color: #3498db;
+  color: var(--primary-color);
 }
 
 /* Messages/Alerts - Compact */
@@ -351,8 +368,8 @@ body {
 
 /* Footer - Compact for Kiosk */
 .footer {
-  background-color: #2c3e50;
-  color: white;
+  background-color: var(--secondary-color);
+  color: var(--white);
   text-align: center;
   padding: 0.5rem 0;
   margin-top: 1rem;
@@ -390,8 +407,8 @@ body {
 
 .meal-type {
   display: inline-block;
-  background-color: #3498db;
-  color: white;
+  background-color: var(--primary-color);
+  color: var(--white);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.8rem;
@@ -451,7 +468,7 @@ body {
 }
 
 .meal-week-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 0.5rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -467,13 +484,13 @@ body {
 .meal-week-card.empty {
   grid-column: 1 / -1;
   padding: 1rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .meal-day {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #3498db;
+  color: var(--primary-color);
   margin-bottom: 0.25rem;
   text-transform: uppercase;
 }
@@ -481,7 +498,7 @@ body {
 .meal-name {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #2c3e50;
+  color: var(--secondary-color);
   line-height: 1.2;
 }
 
@@ -499,15 +516,15 @@ body {
 .no-users {
   text-align: center;
   padding: 1.5rem;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  color: #7f8c8d;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
 .user-profile-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 0.75rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -526,7 +543,7 @@ body {
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #3498db;
+  border: 3px solid var(--primary-color);
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
@@ -539,7 +556,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 3rem;
-  border: 3px solid #3498db;
+  border: 3px solid var(--primary-color);
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   margin: 0 auto;
 }
@@ -547,7 +564,7 @@ body {
 .profile-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--secondary-color);
   margin-bottom: 0.5rem;
 }
 
@@ -569,13 +586,13 @@ body {
 .points-value {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #3498db;
+  color: var(--primary-color);
 }
 
 /* Chores List Container - Compact for Kiosk */
 .chores-list-container {
   flex: 1;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 0.75rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -586,7 +603,7 @@ body {
 .no-chores {
   text-align: center;
   padding: 1.5rem 1rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -595,7 +612,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.6rem;
-  border-bottom: 1px solid #ecf0f1;
+  border-bottom: 1px solid var(--border-color);
   gap: 0.75rem;
 }
 
@@ -618,7 +635,7 @@ body {
 .chore-title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--secondary-color);
   margin-bottom: 0.15rem;
 }
 
@@ -631,11 +648,11 @@ body {
   display: flex;
   gap: 0.75rem;
   font-size: 0.75rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .chore-due-date {
-  color: #95a5a6;
+  color: var(--text-light);
 }
 
 .chore-buttons {
@@ -655,22 +672,22 @@ body {
 }
 
 .btn-complete {
-  background-color: #2ecc71;
-  color: white;
+  background-color: var(--success-color);
+  color: var(--white);
 }
 
 .btn-complete:hover {
-  background-color: #27ae60;
+  background-color: var(--success-hover);
   transform: scale(1.05);
 }
 
 .btn-skip {
-  background-color: #f39c12;
-  color: white;
+  background-color: var(--warning-color);
+  color: var(--white);
 }
 
 .btn-skip:hover {
-  background-color: #e67e22;
+  background-color: var(--warning-hover);
   transform: scale(1.05);
 }
 
@@ -697,3 +714,31 @@ body {
   display: none;
 }
 
+/* Theme Overrides */
+
+/* Valentines Day (February) */
+body.valentines {
+  --primary-color: #e91e63;
+  --primary-hover: #c2185b;
+  --secondary-color: #880e4f;
+  --background-color: #fce4ec;
+  --text-muted: #ad1457;
+}
+
+/* Thanksgiving (November) */
+body.thanksgiving {
+  --primary-color: #d84315;
+  --primary-hover: #bf360c;
+  --secondary-color: #3e2723;
+  --background-color: #fff3e0;
+  --text-muted: #5d4037;
+}
+
+/* Christmas (December) */
+body.christmas {
+  --primary-color: #c62828;
+  --primary-hover: #b71c1c;
+  --secondary-color: #1b5e20;
+  --background-color: #e8f5e9;
+  --text-muted: #2e7d32;
+}
