@@ -603,8 +603,16 @@ router.post('/chores/template/create', (req, res) => {
  */
 router.get('/meals', (req, res) => {
   try {
-    const meals = MealsService.getAllMeals(50);
-    res.render('admin/meals', { meals });
+    const view = req.query.view || 'upcoming';
+    let meals;
+
+    if (view === 'history') {
+      meals = MealsService.getPastMeals(50);
+    } else {
+      meals = MealsService.getUpcomingMeals(50);
+    }
+
+    res.render('admin/meals', { meals, view });
   } catch (error) {
     logger.error('Error rendering meals:', error);
     res.status(500).send('Internal Server Error');
@@ -617,15 +625,28 @@ router.get('/meals/create', (req, res) => {
 
 router.post('/meals/create', (req, res) => {
   try {
-    const { title, date, mealType, description } = req.body;
+    const { title, date, mealType, description, recurring, recurringDay, recurringWeeks } = req.body;
     
     if (!title || !date) {
       req.flash('error', 'Title and date are required.');
       return res.redirect('/admin/meals/create');
     }
     
-    MealsService.createMeal({ title, date, mealType: mealType || 'dinner', description });
-    req.flash('success', 'Meal created successfully!');
+    if (recurring) {
+      const count = MealsService.createRecurringMeals({
+        title,
+        startDate: date,
+        dayOfWeek: parseInt(recurringDay, 10),
+        weeks: parseInt(recurringWeeks, 10),
+        mealType: mealType || 'dinner',
+        description
+      });
+      req.flash('success', `${count} recurring meals created successfully!`);
+    } else {
+      MealsService.createMeal({ title, date, mealType: mealType || 'dinner', description });
+      req.flash('success', 'Meal created successfully!');
+    }
+
     res.redirect('/admin/meals');
   } catch (error) {
     logger.error('Error creating meal:', error);

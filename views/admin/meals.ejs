@@ -14,14 +14,21 @@
     <%- include('../partials/messages') %>
 
     <div class="admin-header">
-      <h1>🍽️ Manage Meals</h1>
-      <a href="/admin/meals/create" class="btn btn-primary mobile-btn">➕ Add Meal</a>
+      <h1>🍽️ <%= typeof view !== 'undefined' && view === 'history' ? 'Meal History' : 'Upcoming Meals' %></h1>
+      <div style="display: flex; gap: 10px;">
+        <a href="/admin/meals/create" class="btn btn-primary mobile-btn">➕ Add</a>
+        <% if (typeof view !== 'undefined' && view === 'history') { %>
+          <a href="/admin/meals" class="btn btn-secondary mobile-btn">⬅️ Upcoming</a>
+        <% } else { %>
+          <a href="/admin/meals?view=history" class="btn btn-secondary mobile-btn">📜 History</a>
+        <% } %>
+      </div>
     </div>
 
     <% if (meals.length === 0) { %>
       <div class="card">
-        <p>No meals yet.</p>
-        <a href="/admin/meals/create" class="btn btn-primary">Add your first meal</a>
+        <p>No meals found.</p>
+        <a href="/admin/meals/create" class="btn btn-primary">Add a meal</a>
       </div>
     <% } else { %>
       <div class="admin-list">

@@ -1,5 +1,6 @@
 import { getDb } from '../db/init.js';
 import { logger } from '../utils/logger.js';
+import { DateTime } from 'luxon';
 
 export class MealsService {
   
@@ -94,5 +95,57 @@ export class MealsService {
     const db = getDb();
     const stmt = db.prepare('SELECT * FROM meals ORDER BY date DESC LIMIT ?');
     return stmt.all(limit);
+  }
+
+  /**
+   * Get upcoming meals
+   */
+  static getUpcomingMeals(limit = 100) {
+    const db = getDb();
+    const stmt = db.prepare("SELECT * FROM meals WHERE date >= date('now') ORDER BY date ASC LIMIT ?");
+    return stmt.all(limit);
+  }
+
+  /**
+   * Get past meals (history)
+   */
+  static getPastMeals(limit = 100) {
+    const db = getDb();
+    const stmt = db.prepare("SELECT * FROM meals WHERE date < date('now') ORDER BY date DESC LIMIT ?");
+    return stmt.all(limit);
+  }
+
+  /**
+   * Create recurring meals
+   * @param {Object} params
+   * @param {string} params.title
+   * @param {string} params.startDate - ISO date string
+   * @param {number} params.dayOfWeek - 1 (Monday) to 7 (Sunday)
+   * @param {number} params.weeks - Number of weeks to repeat
+   * @param {string} params.mealType
+   * @param {string} params.description
+   */
+  static createRecurringMeals({ title, startDate, dayOfWeek, weeks, mealType, description }) {
+    let date = DateTime.fromISO(startDate);
+
+    // Find the first occurrence of dayOfWeek on or after startDate
+    // dayOfWeek should be 1-7 (Mon-Sun)
+    while (date.weekday !== dayOfWeek) {
+      date = date.plus({ days: 1 });
+    }
+
+    let count = 0;
+    for (let i = 0; i < weeks; i++) {
+      this.createMeal({
+        title,
+        date: date.toISODate(),
+        mealType,
+        description
+      });
+      date = date.plus({ weeks: 1 });
+      count++;
+    }
+
+    return count;
   }
 }
