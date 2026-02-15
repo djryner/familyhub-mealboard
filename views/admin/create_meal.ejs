@@ -42,6 +42,33 @@
           <textarea id="description" name="description" rows="4" placeholder="Notes, ingredients, recipe link, etc." class="mobile-input"></textarea>
         </div>
 
+        <div class="form-group" style="background: rgba(0,0,0,0.03); padding: 15px; border-radius: 8px; margin-top: 20px;">
+          <div style="display: flex; align-items: center; margin-bottom: 10px;">
+             <input type="checkbox" id="recurring" name="recurring" style="width: auto; margin-right: 10px;">
+             <label for="recurring" style="margin-bottom: 0; font-weight: bold;">Recurring Weekly?</label>
+          </div>
+
+          <div id="recurring-options" style="display: none;">
+            <div class="form-group">
+              <label for="recurringDay">Day of Week</label>
+              <select id="recurringDay" name="recurringDay" class="mobile-input">
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+                <option value="7">Sunday</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="recurringWeeks">Duration (Weeks)</label>
+              <input type="number" id="recurringWeeks" name="recurringWeeks" value="4" min="1" max="52" class="mobile-input">
+            </div>
+          </div>
+        </div>
+
         <div class="form-actions mobile-actions">
           <button type="submit" class="btn btn-primary mobile-btn">Create Meal</button>
           <a href="/admin/meals" class="btn btn-secondary mobile-btn">Cancel</a>
@@ -49,6 +76,43 @@
       </form>
     </div>
   </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const recurringCheckbox = document.getElementById('recurring');
+      const recurringOptions = document.getElementById('recurring-options');
+      const dateInput = document.getElementById('date');
+      const daySelect = document.getElementById('recurringDay');
+
+      function updateDayFromDate() {
+        if (dateInput.value) {
+          const parts = dateInput.value.split('-');
+          const date = new Date(parts[0], parts[1]-1, parts[2]);
+          // JS getDay(): 0 = Sun, 1 = Mon...
+          // Our select: 1 = Mon... 7 = Sun
+          let day = date.getDay();
+          if (day === 0) day = 7;
+
+          if (!isNaN(day)) {
+            daySelect.value = day;
+          }
+        }
+      }
+
+      recurringCheckbox.addEventListener('change', function() {
+        recurringOptions.style.display = this.checked ? 'block' : 'none';
+        if (this.checked) {
+          updateDayFromDate();
+        }
+      });
+
+      dateInput.addEventListener('change', function() {
+        if (recurringCheckbox.checked) {
+          updateDayFromDate();
+        }
+      });
+    });
+  </script>
 
   <%- include('../partials/footer') %>
 </body>
