@@ -30,7 +30,7 @@
           <div class="chore-card">
             <h3><%= chore.title %></h3>
             <div class="chore-meta">
-              <span>📅 <%= new Date(chore.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+              <span>📅 <%= new Date(chore.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) %></span>
               <span>⭐ <%= chore.points %> points</span>
             </div>
             

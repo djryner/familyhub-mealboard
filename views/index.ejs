@@ -23,7 +23,7 @@
           <% meals.forEach(meal => { %>
             <div class="meal-week-card">
               <div class="meal-day">
-                <%= new Date(meal.date).toLocaleDateString('en-US', { weekday: 'short' }) %>
+                <%= new Date(meal.date).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }) %>
               </div>
               <div class="meal-name">
                 <%= meal.title %>
@@ -79,7 +79,7 @@
                       <div class="chore-title"><%= chore.title %></div>
                     <% } %>
                     <div class="chore-meta-info">
-                      <span class="chore-due-date">📅 <%= new Date(chore.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></span>
+                      <span class="chore-due-date">📅 <%= new Date(chore.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) %></span>
                       <span class="chore-points">⭐ <%= chore.points %> pts</span>
                     </div>
                   </div>
